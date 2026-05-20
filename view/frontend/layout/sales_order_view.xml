@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <!-- Customer's order detail page — shows the delivery date the
+             customer picked at checkout. Renders under the shipping/billing
+             info block, before order items, on both Hyvä and Luma. -->
+        <referenceContainer name="sales.order.info">
+            <block name="etechflow.delivery.details.order.view"
+                   template="ETechFlow_DeliveryDate::order/delivery-details.phtml"
+                   after="-">
+                <arguments>
+                    <argument name="view_model" xsi:type="object">
+                        ETechFlow\DeliveryDate\ViewModel\Order\DeliveryDetails
+                    </argument>
+                </arguments>
+            </block>
+        </referenceContainer>
+    </body>
+</page>

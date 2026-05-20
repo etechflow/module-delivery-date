@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+<!--
+    REST API endpoints for the Delivery Date module (v1.0).
+
+    The repositories are exposed read+write to admin tokens. Headless merchants
+    (PWA Studio, custom front-ends, integrations) can now CRUD time intervals
+    + exception days through the REST API instead of admin grids.
+
+    Endpoint conventions:
+        /V1/etechflow-delivery-date/time-intervals          (GET all)
+        /V1/etechflow-delivery-date/time-intervals/:id      (GET, PUT, DELETE)
+        /V1/etechflow-delivery-date/time-intervals          (POST = save new)
+        /V1/etechflow-delivery-date/exception-days          (similar shape)
+
+    All require the standard Magento admin auth token (Bearer header).
+-->
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Webapi:etc/webapi.xsd">
+
+    <!-- Time Intervals -->
+    <route url="/V1/etechflow-delivery-date/time-intervals" method="GET">
+        <service class="ETechFlow\DeliveryDate\Api\TimeIntervalRepositoryInterface" method="getAll"/>
+        <resources>
+            <resource ref="ETechFlow_DeliveryDate::time_interval"/>
+        </resources>
+    </route>
+
+    <route url="/V1/etechflow-delivery-date/time-intervals/:intervalId" method="GET">
+        <service class="ETechFlow\DeliveryDate\Api\TimeIntervalRepositoryInterface" method="getById"/>
+        <resources>
+            <resource ref="ETechFlow_DeliveryDate::time_interval"/>
+        </resources>
+    </route>
+
+    <route url="/V1/etechflow-delivery-date/time-intervals" method="POST">
+        <service class="ETechFlow\DeliveryDate\Api\TimeIntervalRepositoryInterface" method="save"/>
+        <resources>
+            <resource ref="ETechFlow_DeliveryDate::time_interval"/>
+        </resources>
+    </route>
+
+    <route url="/V1/etechflow-delivery-date/time-intervals/:intervalId" method="DELETE">
+        <service class="ETechFlow\DeliveryDate\Api\TimeIntervalRepositoryInterface" method="deleteById"/>
+        <resources>
+            <resource ref="ETechFlow_DeliveryDate::time_interval"/>
+        </resources>
+    </route>
+
+    <!-- Exception Days -->
+    <route url="/V1/etechflow-delivery-date/exception-days" method="GET">
+        <service class="ETechFlow\DeliveryDate\Api\ExceptionDayRepositoryInterface" method="getAll"/>
+        <resources>
+            <resource ref="ETechFlow_DeliveryDate::exception_day"/>
+        </resources>
+    </route>
+
+    <route url="/V1/etechflow-delivery-date/exception-days/:exceptionId" method="GET">
+        <service class="ETechFlow\DeliveryDate\Api\ExceptionDayRepositoryInterface" method="getById"/>
+        <resources>
+            <resource ref="ETechFlow_DeliveryDate::exception_day"/>
+        </resources>
+    </route>
+
+    <route url="/V1/etechflow-delivery-date/exception-days" method="POST">
+        <service class="ETechFlow\DeliveryDate\Api\ExceptionDayRepositoryInterface" method="save"/>
+        <resources>
+            <resource ref="ETechFlow_DeliveryDate::exception_day"/>
+        </resources>
+    </route>
+
+    <route url="/V1/etechflow-delivery-date/exception-days/:exceptionId" method="DELETE">
+        <service class="ETechFlow\DeliveryDate\Api\ExceptionDayRepositoryInterface" method="deleteById"/>
+        <resources>
+            <resource ref="ETechFlow_DeliveryDate::exception_day"/>
+        </resources>
+    </route>
+
+</routes>

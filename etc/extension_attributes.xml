@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Api/etc/extension_attributes.xsd">
+
+    <!--
+        Quote address: expose the customer-picked delivery fields as
+        extension attributes so the frontend can POST them via the
+        standard /rest/V1/carts/mine/shipping-information endpoint.
+
+        Once Magento processes setup:di:compile, these generate the
+        corresponding interface methods (e.g.
+        getEtechflowDeliveryDate(): ?string) which the
+        ShippingInformationManagementPlugin reads.
+    -->
+    <extension_attributes for="Magento\Quote\Api\Data\AddressInterface">
+        <attribute code="etechflow_delivery_date" type="string"/>
+        <attribute code="etechflow_delivery_time_interval_id" type="int"/>
+        <attribute code="etechflow_delivery_comment" type="string"/>
+    </extension_attributes>
+
+    <!--
+        Sales order: expose the same fields on order responses so headless
+        merchants (PWA Studio, custom front-ends) can read the picked date
+        from order detail / confirmation queries.
+    -->
+    <extension_attributes for="Magento\Sales\Api\Data\OrderInterface">
+        <attribute code="etechflow_delivery_date" type="string"/>
+        <attribute code="etechflow_delivery_time_interval_id" type="int"/>
+        <attribute code="etechflow_delivery_comment" type="string"/>
+    </extension_attributes>
+
+</config>

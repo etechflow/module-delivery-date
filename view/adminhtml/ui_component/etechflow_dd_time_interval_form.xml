@@ -1,0 +1,119 @@
+<?xml version="1.0"?>
+<form xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">etechflow_dd_time_interval_form.etechflow_dd_time_interval_form_data_source</item>
+        </item>
+        <item name="label" xsi:type="string" translate="true">Time Interval</item>
+        <item name="config" xsi:type="array">
+            <item name="dataScope" xsi:type="string">data</item>
+            <item name="namespace" xsi:type="string">etechflow_dd_time_interval_form</item>
+        </item>
+        <item name="template" xsi:type="string">templates/form/collapsible</item>
+    </argument>
+    <settings>
+        <buttons>
+            <button name="save" class="ETechFlow\DeliveryDate\Block\Adminhtml\TimeInterval\Edit\SaveButton"/>
+            <button name="back" class="ETechFlow\DeliveryDate\Block\Adminhtml\TimeInterval\Edit\BackButton"/>
+        </buttons>
+        <namespace>etechflow_dd_time_interval_form</namespace>
+        <dataScope>data</dataScope>
+        <deps>
+            <dep>etechflow_dd_time_interval_form.etechflow_dd_time_interval_form_data_source</dep>
+        </deps>
+    </settings>
+    <dataSource name="etechflow_dd_time_interval_form_data_source">
+        <argument name="data" xsi:type="array">
+            <item name="js_config" xsi:type="array">
+                <item name="component" xsi:type="string">Magento_Ui/js/form/provider</item>
+            </item>
+        </argument>
+        <settings>
+            <submitUrl path="*/*/save"/>
+        </settings>
+        <dataProvider class="ETechFlow\DeliveryDate\Ui\Component\Form\TimeIntervalDataProvider"
+                      name="etechflow_dd_time_interval_form_data_source">
+            <settings>
+                <requestFieldName>interval_id</requestFieldName>
+                <primaryFieldName>interval_id</primaryFieldName>
+            </settings>
+        </dataProvider>
+    </dataSource>
+    <fieldset name="general">
+        <settings>
+            <label translate="true">General</label>
+        </settings>
+        <htmlContent name="time_interval_tz_note">
+            <block name="time_interval_tz_note_block"
+                   class="ETechFlow\DeliveryDate\Block\Adminhtml\Form\TimezoneNote"/>
+        </htmlContent>
+        <field name="from_time" formElement="input">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="source" xsi:type="string">etechflow_dd_time_interval</item>
+                </item>
+            </argument>
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">From (HH:MM)</label>
+                <dataScope>from_time</dataScope>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                    <rule name="validate-time" xsi:type="boolean">true</rule>
+                </validation>
+                <notice translate="true">24-hour format, e.g. 09:00.</notice>
+            </settings>
+        </field>
+        <field name="to_time" formElement="input">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="source" xsi:type="string">etechflow_dd_time_interval</item>
+                </item>
+            </argument>
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">To (HH:MM)</label>
+                <dataScope>to_time</dataScope>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                    <rule name="validate-time" xsi:type="boolean">true</rule>
+                </validation>
+                <notice translate="true">Must be later than "From".</notice>
+            </settings>
+        </field>
+        <field name="position" formElement="input">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="source" xsi:type="string">etechflow_dd_time_interval</item>
+                </item>
+            </argument>
+            <settings>
+                <dataType>number</dataType>
+                <label translate="true">Position</label>
+                <dataScope>position</dataScope>
+                <notice translate="true">Sort order in the customer-facing dropdown (lower numbers first).</notice>
+            </settings>
+        </field>
+        <field name="store_id" formElement="select" component="Magento_Ui/js/form/element/ui-select" sortOrder="40">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="source" xsi:type="string">etechflow_dd_time_interval</item>
+                </item>
+            </argument>
+            <settings>
+                <elementTmpl>ui/grid/filters/elements/ui-select</elementTmpl>
+                <dataType>int</dataType>
+                <label translate="true">Store View</label>
+                <dataScope>store_id</dataScope>
+            </settings>
+            <formElements>
+                <select>
+                    <settings>
+                        <options class="Magento\Config\Model\Config\Source\Store\WebsiteStore"/>
+                    </settings>
+                </select>
+            </formElements>
+        </field>
+    </fieldset>
+</form>

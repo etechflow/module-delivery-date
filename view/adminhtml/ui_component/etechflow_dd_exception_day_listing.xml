@@ -1,0 +1,126 @@
+<?xml version="1.0"?>
+<listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">etechflow_dd_exception_day_listing.etechflow_dd_exception_day_listing_data_source</item>
+        </item>
+    </argument>
+    <settings>
+        <spinner>etechflow_dd_exception_day_columns</spinner>
+        <deps>
+            <dep>etechflow_dd_exception_day_listing.etechflow_dd_exception_day_listing_data_source</dep>
+        </deps>
+        <buttons>
+            <button name="add">
+                <url path="*/*/new"/>
+                <class>primary</class>
+                <label translate="true">Add New Exception</label>
+            </button>
+        </buttons>
+    </settings>
+    <dataSource name="etechflow_dd_exception_day_listing_data_source" component="Magento_Ui/js/grid/provider">
+        <settings>
+            <storageConfig>
+                <param name="indexField" xsi:type="string">exception_id</param>
+            </storageConfig>
+            <updateUrl path="mui/index/render"/>
+        </settings>
+        <aclResource>ETechFlow_DeliveryDate::exception_day</aclResource>
+        <dataProvider name="etechflow_dd_exception_day_listing_data_source"
+                      class="Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider">
+            <settings>
+                <requestFieldName>exception_id</requestFieldName>
+                <primaryFieldName>exception_id</primaryFieldName>
+            </settings>
+        </dataProvider>
+    </dataSource>
+    <listingToolbar name="listing_top">
+        <settings>
+            <sticky>true</sticky>
+        </settings>
+        <bookmark name="bookmarks"/>
+        <columnsControls name="columns_controls"/>
+        <filters name="listing_filters"/>
+        <massaction name="listing_massaction">
+            <action name="delete">
+                <settings>
+                    <confirm>
+                        <message translate="true">Delete selected exceptions?</message>
+                        <title translate="true">Delete items</title>
+                    </confirm>
+                    <url path="*/*/massDelete"/>
+                    <type>delete</type>
+                    <label translate="true">Delete</label>
+                </settings>
+            </action>
+        </massaction>
+        <paging name="listing_paging"/>
+    </listingToolbar>
+    <columns name="etechflow_dd_exception_day_columns">
+        <selectionsColumn name="ids">
+            <settings>
+                <indexField>exception_id</indexField>
+            </settings>
+        </selectionsColumn>
+        <column name="exception_id">
+            <settings>
+                <filter>textRange</filter>
+                <label translate="true">ID</label>
+                <sorting>asc</sorting>
+            </settings>
+        </column>
+        <column name="day_type">
+            <settings>
+                <filter>select</filter>
+                <dataType>select</dataType>
+                <label translate="true">Type</label>
+                <options class="ETechFlow\DeliveryDate\Ui\Component\Form\DayType\Options"/>
+            </settings>
+        </column>
+        <column name="day">
+            <settings>
+                <filter>textRange</filter>
+                <label translate="true">Day</label>
+            </settings>
+        </column>
+        <column name="month">
+            <settings>
+                <filter>textRange</filter>
+                <label translate="true">Month</label>
+            </settings>
+        </column>
+        <column name="year">
+            <settings>
+                <filter>textRange</filter>
+                <label translate="true">Year</label>
+            </settings>
+        </column>
+        <column name="description">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Description</label>
+            </settings>
+        </column>
+        <column name="store_ids">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Store IDs</label>
+            </settings>
+        </column>
+        <column name="updated_at" class="Magento\Ui\Component\Listing\Columns\Date" component="Magento_Ui/js/grid/columns/date">
+            <settings>
+                <filter>dateRange</filter>
+                <dataType>date</dataType>
+                <label translate="true">Last Updated</label>
+            </settings>
+        </column>
+        <actionsColumn name="actions" class="ETechFlow\DeliveryDate\Ui\Component\Listing\Column\ExceptionDayActions">
+            <settings>
+                <indexField>exception_id</indexField>
+                <resizeEnabled>false</resizeEnabled>
+                <resizeDefaultWidth>107</resizeDefaultWidth>
+            </settings>
+        </actionsColumn>
+    </columns>
+</listing>

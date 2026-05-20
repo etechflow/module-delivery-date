@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        <!-- Top-level "Delivery Date" submenu under Sales — same pattern
+             Amasty uses, so merchants find it where they expect. -->
+        <add id="ETechFlow_DeliveryDate::management"
+             title="Delivery Date"
+             module="ETechFlow_DeliveryDate"
+             sortOrder="80"
+             parent="Magento_Sales::sales"
+             resource="ETechFlow_DeliveryDate::management"/>
+
+        <add id="ETechFlow_DeliveryDate::time_interval"
+             title="Time Intervals"
+             module="ETechFlow_DeliveryDate"
+             sortOrder="10"
+             parent="ETechFlow_DeliveryDate::management"
+             action="etechflow_dd/timeInterval/index"
+             resource="ETechFlow_DeliveryDate::time_interval"/>
+
+        <add id="ETechFlow_DeliveryDate::exception_day"
+             title="Exception Days"
+             module="ETechFlow_DeliveryDate"
+             sortOrder="20"
+             parent="ETechFlow_DeliveryDate::management"
+             action="etechflow_dd/exceptionDay/index"
+             resource="ETechFlow_DeliveryDate::exception_day"/>
+    </menu>
+</config>

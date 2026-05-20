@@ -1,0 +1,111 @@
+<!--
+    Luma Knockout template — Delivery Date Picker.
+    Hyvä uses the Alpine template in templates/hyva/.
+
+    All styling lives in view/frontend/web/css/delivery-picker.css so
+    merchants can override without forking the template. CSS uses
+    Luma-friendly class names (BEM-style) rather than Tailwind utilities.
+-->
+<div class="etechflow-dd-picker" data-bind="visible: enabled" role="region" aria-labelledby="etechflow-dd-title" style="display: none;">
+
+    <div class="etechflow-dd-header">
+        <h3 id="etechflow-dd-title" class="etechflow-dd-title" data-bind="text: $t('Choose your delivery day')"></h3>
+        <button type="button"
+                class="action etechflow-dd-quick"
+                data-bind="visible: earliestDate, click: selectEarliest, text: $t('Get it as soon as possible')"></button>
+    </div>
+
+    <p class="etechflow-dd-note" data-bind="visible: fieldNote, text: fieldNote"></p>
+
+    <div class="etechflow-dd-calendar">
+        <div class="etechflow-dd-month-nav">
+            <button type="button"
+                    class="etechflow-dd-arrow etechflow-dd-arrow--prev"
+                    data-bind="click: prevMonth, enable: canGoBack, attr: { 'aria-label': $t('Previous month') }">
+                &#8592;
+            </button>
+            <span class="etechflow-dd-month-label" data-bind="text: formatMonth()"></span>
+            <button type="button"
+                    class="etechflow-dd-arrow etechflow-dd-arrow--next"
+                    data-bind="click: nextMonth, enable: canGoForward, attr: { 'aria-label': $t('Next month') }">
+                &#8594;
+            </button>
+        </div>
+
+        <div class="etechflow-dd-weekday-row" aria-hidden="true">
+            <!-- ko foreach: weekdayLabels() -->
+            <div class="etechflow-dd-weekday-label" data-bind="text: $data"></div>
+            <!-- /ko -->
+        </div>
+
+        <div class="etechflow-dd-day-grid"
+             role="grid"
+             data-bind="attr: { 'aria-label': $t('Delivery date calendar') }">
+            <!-- ko foreach: monthCells() -->
+            <div role="gridcell" data-bind="attr: { 'aria-selected': $data.iso && $parent.selected() === $data.iso }">
+                <!-- ko if: $data.empty -->
+                    <div class="etechflow-dd-cell etechflow-dd-cell--empty"></div>
+                <!-- /ko -->
+                <!-- ko ifnot: $data.empty -->
+                    <button type="button"
+                            data-bind="
+                                css: $parent.cellClass($data),
+                                click: function () { $parent.select($data); },
+                                event: { keydown: function (data, event) { return $parent.handleKey($data, event); } },
+                                attr: {
+                                    'aria-label': $parent.ariaLabel($data),
+                                    'tabindex': $data.iso === $parent.focused() ? 0 : -1
+                                },
+                                enable: $data.available">
+                        <span class="etechflow-dd-cell-day" data-bind="text: $data.day"></span>
+                        <span class="etechflow-dd-cell-badge" data-bind="visible: $data.badge, text: $data.badge"></span>
+                    </button>
+                <!-- /ko -->
+            </div>
+            <!-- /ko -->
+        </div>
+    </div>
+
+    <div class="etechflow-dd-readout" data-bind="visible: selected()">
+        <strong data-bind="text: $t('Delivery date:')"></strong>
+        <span data-bind="text: formattedDate()"></span>
+    </div>
+
+    <!-- v0.6 — Time slot dropdown. Shows only when:
+           1. A date is selected, AND
+           2. The merchant has configured at least one slot.
+         The dropdown's options come from availableIntervals (set in
+         init() from window.checkoutConfig.etechflowDeliveryDate). -->
+    <div class="etechflow-dd-slot-block"
+         data-bind="visible: selected() &amp;&amp; availableIntervals.length > 0">
+        <label class="etechflow-dd-slot-label" for="etechflow-dd-slot">
+            <span data-bind="text: $t('Delivery time')"></span>
+        </label>
+        <select id="etechflow-dd-slot"
+                class="etechflow-dd-slot"
+                data-bind="value: timeIntervalId,
+                           options: availableIntervals,
+                           optionsText: 'label',
+                           optionsValue: 'id',
+                           optionsCaption: $t('-- Any time --')"></select>
+    </div>
+
+    <div class="etechflow-dd-comment-block">
+        <label class="etechflow-dd-comment-label" for="etechflow-dd-comment">
+            <span data-bind="text: $t('Notes for the driver')"></span>
+            <span class="etechflow-dd-comment-optional" data-bind="text: '(' + $t('optional') + ')'"></span>
+        </label>
+        <textarea id="etechflow-dd-comment"
+                  class="etechflow-dd-comment"
+                  rows="2"
+                  maxlength="1000"
+                  data-bind="
+                    value: comment,
+                    valueUpdate: 'afterkeydown',
+                    attr: { 'placeholder': $t('e.g. Leave at side gate, ring twice') }"></textarea>
+        <p class="etechflow-dd-comment-counter">
+            <span data-bind="text: comment().length"></span>/1000
+        </p>
+    </div>
+
+</div>

@@ -1,0 +1,183 @@
+<?php
+declare(strict_types=1);
+
+/**
+ * Magewire-native delivery date picker template.
+ *
+ * Companion to ETechFlow\DeliveryDate\Magewire\Checkout\DeliveryDatePicker.
+ * Renders the calendar grid + slot dropdown + comment textarea entirely
+ * from server-side state — every interaction round-trips through Magewire.
+ *
+ * Magewire conventions used here:
+ *  - $magewire->property        — read public state
+ *  - wire:click="action(args)"  — invoke a server action
+ *  - wire:model.live="prop"     — two-way bind a form field to state
+ *  - wire:loading.class         — show a CSS class while Magewire is fetching
+ *
+ * The root <div> is required — Magewire binds component state to the first
+ * HTML element in the template. Adding/removing the wrapping div will
+ * break state hydration.
+ */
+
+/** @var \ETechFlow\DeliveryDate\Magewire\Checkout\DeliveryDatePicker $magewire */
+/** @var \Magento\Framework\Escaper $escaper */
+?>
+<?php if (!$magewire->enabled): ?>
+    <div></div>
+<?php else: ?>
+<div id="etechflow-dd-magewire"
+     class="my-6 rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
+     wire:loading.class="opacity-60 pointer-events-none"
+     role="region"
+     aria-labelledby="etechflow-dd-magewire-title">
+
+    <div class="flex items-baseline justify-between gap-4">
+        <h3 id="etechflow-dd-magewire-title" class="text-base font-semibold text-slate-900">
+            <?= $escaper->escapeHtml(__('Choose your delivery day')) ?>
+        </h3>
+        <?php if ($magewire->earliestDate !== null): ?>
+            <button type="button"
+                    wire:click="pickDate('<?= $escaper->escapeJs($magewire->earliestDate) ?>')"
+                    class="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">
+                <?= $escaper->escapeHtml(__('Get it as soon as possible')) ?>
+            </button>
+        <?php endif; ?>
+    </div>
+
+    <?php if ($magewire->fieldNote !== ''): ?>
+        <p class="mt-1 text-sm text-slate-500"><?= $escaper->escapeHtml($magewire->fieldNote) ?></p>
+    <?php endif; ?>
+
+    <!-- Calendar -->
+    <div class="mt-4">
+
+        <!-- Month nav -->
+        <div class="mb-3 flex items-center justify-between">
+            <button type="button"
+                    wire:click="prevMonth"
+                    <?= $magewire->canGoBack() ? '' : 'disabled' ?>
+                    class="rounded p-1 text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    aria-label="<?= $escaper->escapeHtmlAttr(__('Previous month')) ?>">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            <div class="text-sm font-medium text-slate-900"><?= $escaper->escapeHtml($magewire->getMonthLabel()) ?></div>
+            <button type="button"
+                    wire:click="nextMonth"
+                    <?= $magewire->canGoForward() ? '' : 'disabled' ?>
+                    class="rounded p-1 text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    aria-label="<?= $escaper->escapeHtmlAttr(__('Next month')) ?>">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Weekday header -->
+        <div class="grid grid-cols-7 gap-1 text-center text-xs font-medium text-slate-500" role="row" aria-hidden="true">
+            <?php foreach ($magewire->getWeekdayLabels() as $weekdayLabel): ?>
+                <div class="py-1"><?= $escaper->escapeHtml($weekdayLabel) ?></div>
+            <?php endforeach; ?>
+        </div>
+
+        <!-- Day grid — server-rendered cells -->
+        <div class="mt-1 grid grid-cols-7 gap-1"
+             role="grid"
+             aria-label="<?= $escaper->escapeHtmlAttr(__('Delivery date calendar')) ?>">
+            <?php foreach ($magewire->getMonthCells() as $cell): ?>
+                <?php if (!empty($cell['empty'])): ?>
+                    <div role="gridcell" class="h-10"></div>
+                <?php else:
+                    $cellClasses = 'relative flex h-10 w-full items-center justify-center rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1';
+                    if (!$cell['available']) {
+                        $cellClasses .= ' text-slate-300 cursor-not-allowed';
+                    } elseif ($cell['isSelected']) {
+                        $cellClasses .= ' bg-blue-600 text-white font-semibold hover:bg-blue-700';
+                    } else {
+                        $cellClasses .= ' text-slate-900 hover:bg-slate-100 cursor-pointer';
+                    }
+                    ?>
+                    <div role="gridcell" aria-selected="<?= $cell['isSelected'] ? 'true' : 'false' ?>">
+                        <button type="button"
+                                <?php if ($cell['available']): ?>
+                                wire:click="pickDate('<?= $escaper->escapeJs($cell['iso']) ?>')"
+                                <?php endif; ?>
+                                <?= $cell['available'] ? '' : 'disabled' ?>
+                                class="<?= $escaper->escapeHtmlAttr($cellClasses) ?>"
+                                aria-label="<?= $escaper->escapeHtmlAttr(sprintf(
+                                    '%s %d, %s%s',
+                                    $magewire->getMonthLabel(),
+                                    $cell['day'],
+                                    $cell['available'] ? (string) __('available') : (string) __('unavailable'),
+                                    $cell['isSelected'] ? ', ' . (string) __('selected') : ''
+                                )) ?>">
+                            <span><?= (int) $cell['day'] ?></span>
+                            <?php if ($cell['badge'] !== ''): ?>
+                                <span class="absolute -top-1 -right-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
+                                    <?= $escaper->escapeHtml($cell['badge']) ?>
+                                </span>
+                            <?php endif; ?>
+                        </button>
+                    </div>
+                <?php endif; ?>
+            <?php endforeach; ?>
+        </div>
+    </div>
+
+    <!-- Selected date readout -->
+    <?php if ($magewire->selectedDate !== ''): ?>
+        <div class="mt-4 rounded-md bg-blue-50 px-3 py-2 text-sm text-blue-900">
+            <span class="font-semibold"><?= $escaper->escapeHtml(__('Delivery date:')) ?></span>
+            <?= $escaper->escapeHtml($magewire->getFormattedSelectedDate()) ?>
+        </div>
+    <?php endif; ?>
+
+    <!-- Time slot dropdown — only when a date is picked AND slots are configured -->
+    <?php if ($magewire->selectedDate !== '' && !empty($magewire->availableSlots)): ?>
+        <div class="mt-4">
+            <label for="etechflow-dd-magewire-slot" class="block text-sm font-medium text-slate-700">
+                <?= $escaper->escapeHtml(__('Delivery time')) ?>
+            </label>
+            <select id="etechflow-dd-magewire-slot"
+                    wire:model.live="selectedSlotId"
+                    class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                <option value=""><?= $escaper->escapeHtml(__('-- Any time --')) ?></option>
+                <?php foreach ($magewire->availableSlots as $slot): ?>
+                    <option value="<?= (int) $slot['id'] ?>"
+                            <?= ((int) $slot['id'] === (int) $magewire->selectedSlotId) ? 'selected' : '' ?>>
+                        <?= $escaper->escapeHtml($slot['label']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+    <?php endif; ?>
+
+    <!-- Comment field -->
+    <div class="mt-4">
+        <label for="etechflow-dd-magewire-comment" class="block text-sm font-medium text-slate-700">
+            <?= $escaper->escapeHtml(__('Notes for the driver')) ?>
+            <span class="font-normal text-slate-500">(<?= $escaper->escapeHtml(__('optional')) ?>)</span>
+        </label>
+        <textarea id="etechflow-dd-magewire-comment"
+                  wire:model.live.debounce.500ms="comment"
+                  maxlength="1000"
+                  rows="2"
+                  class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  placeholder="<?= $escaper->escapeHtmlAttr(__('e.g. Leave at side gate, ring twice')) ?>"></textarea>
+        <p class="mt-1 text-right text-xs text-slate-400">
+            <?= strlen($magewire->comment) ?>/1000
+        </p>
+    </div>
+
+    <!-- Hidden inputs — surface the selection into Hyvä Checkout's POST payload.
+         Same names as the Alpine version so the server-side capture plugin
+         (ShippingInformationManagementPlugin) keeps working unchanged. -->
+    <input type="hidden" name="extension_attributes[etechflow_delivery_date]"
+           value="<?= $escaper->escapeHtmlAttr($magewire->selectedDate) ?>"/>
+    <input type="hidden" name="extension_attributes[etechflow_delivery_time_interval_id]"
+           value="<?= $escaper->escapeHtmlAttr((string) ($magewire->selectedSlotId ?? '')) ?>"/>
+    <input type="hidden" name="extension_attributes[etechflow_delivery_comment]"
+           value="<?= $escaper->escapeHtmlAttr($magewire->comment) ?>"/>
+</div>
+<?php endif; ?>

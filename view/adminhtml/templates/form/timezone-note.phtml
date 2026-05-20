@@ -1,0 +1,25 @@
+<?php
+/**
+ * @var \ETechFlow\DeliveryDate\Block\Adminhtml\Form\TimezoneNote $block
+ * @var \Magento\Framework\Escaper $escaper
+ */
+$tzId    = $block->getTimezoneId();
+$offset  = $block->getUtcOffset();
+$nowLine = $block->getNowInTimezone();
+?>
+<div class="etechflow-dd-tz-note"
+     style="margin: 8px 0 16px; padding: 10px 14px; background: #f1f5f9;
+            border-left: 3px solid #0ea5e9; border-radius: 3px; font-size: 13px; line-height: 1.5;">
+    <strong style="color: #0c4a6e;"><?= $escaper->escapeHtml(__('Times below are in')) ?>
+        <code style="background:#fff; padding:1px 6px; border-radius:3px;"><?= $escaper->escapeHtml($tzId) ?></code>
+        <span style="color:#475569; font-weight:normal;">(<?= $escaper->escapeHtml($offset) ?>)</span>
+    </strong>
+    <span style="color:#475569;">
+        — <?= $escaper->escapeHtml(__('your Magento store-view timezone.')) ?>
+        <?= $escaper->escapeHtml(__('Current local time:')) ?>
+        <code style="background:#fff; padding:1px 6px; border-radius:3px;"><?= $escaper->escapeHtml($nowLine) ?></code>.
+    </span>
+    <div style="margin-top:4px; color:#64748b; font-size:12px;">
+        <?= $escaper->escapeHtml(__('Change under Stores → Configuration → General → Locale Options.')) ?>
+    </div>
+</div>

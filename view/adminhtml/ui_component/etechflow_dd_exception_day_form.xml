@@ -1,0 +1,139 @@
+<?xml version="1.0"?>
+<form xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">etechflow_dd_exception_day_form.etechflow_dd_exception_day_form_data_source</item>
+        </item>
+        <item name="label" xsi:type="string" translate="true">Exception Day</item>
+        <item name="config" xsi:type="array">
+            <item name="dataScope" xsi:type="string">data</item>
+            <item name="namespace" xsi:type="string">etechflow_dd_exception_day_form</item>
+        </item>
+        <item name="template" xsi:type="string">templates/form/collapsible</item>
+    </argument>
+    <settings>
+        <buttons>
+            <button name="save" class="ETechFlow\DeliveryDate\Block\Adminhtml\ExceptionDay\Edit\SaveButton"/>
+            <button name="back" class="ETechFlow\DeliveryDate\Block\Adminhtml\ExceptionDay\Edit\BackButton"/>
+        </buttons>
+        <namespace>etechflow_dd_exception_day_form</namespace>
+        <dataScope>data</dataScope>
+        <deps>
+            <dep>etechflow_dd_exception_day_form.etechflow_dd_exception_day_form_data_source</dep>
+        </deps>
+    </settings>
+    <dataSource name="etechflow_dd_exception_day_form_data_source">
+        <argument name="data" xsi:type="array">
+            <item name="js_config" xsi:type="array">
+                <item name="component" xsi:type="string">Magento_Ui/js/form/provider</item>
+            </item>
+        </argument>
+        <settings>
+            <submitUrl path="*/*/save"/>
+        </settings>
+        <dataProvider class="ETechFlow\DeliveryDate\Ui\Component\Form\ExceptionDayDataProvider"
+                      name="etechflow_dd_exception_day_form_data_source">
+            <settings>
+                <requestFieldName>exception_id</requestFieldName>
+                <primaryFieldName>exception_id</primaryFieldName>
+            </settings>
+        </dataProvider>
+    </dataSource>
+    <fieldset name="general">
+        <settings>
+            <label translate="true">General</label>
+        </settings>
+        <field name="day_type" formElement="select">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="source" xsi:type="string">etechflow_dd_exception_day</item>
+                </item>
+            </argument>
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Type</label>
+                <dataScope>day_type</dataScope>
+                <notice translate="true">"Holiday" blocks delivery on this day. "Working" force-enables delivery on a normally-blocked day.</notice>
+            </settings>
+            <formElements>
+                <select>
+                    <settings>
+                        <options class="ETechFlow\DeliveryDate\Ui\Component\Form\DayType\Options"/>
+                    </settings>
+                </select>
+            </formElements>
+        </field>
+        <field name="day" formElement="input">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="source" xsi:type="string">etechflow_dd_exception_day</item>
+                </item>
+            </argument>
+            <settings>
+                <dataType>number</dataType>
+                <label translate="true">Day</label>
+                <dataScope>day</dataScope>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                    <rule name="validate-digits-range" xsi:type="string">1-31</rule>
+                </validation>
+            </settings>
+        </field>
+        <field name="month" formElement="input">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="source" xsi:type="string">etechflow_dd_exception_day</item>
+                </item>
+            </argument>
+            <settings>
+                <dataType>number</dataType>
+                <label translate="true">Month</label>
+                <dataScope>month</dataScope>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                    <rule name="validate-digits-range" xsi:type="string">1-12</rule>
+                </validation>
+            </settings>
+        </field>
+        <field name="year" formElement="input">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="source" xsi:type="string">etechflow_dd_exception_day</item>
+                </item>
+            </argument>
+            <settings>
+                <dataType>number</dataType>
+                <label translate="true">Year</label>
+                <dataScope>year</dataScope>
+                <notice translate="true">Leave blank for "every year" (e.g. Christmas Day Dec 25, every year).</notice>
+            </settings>
+        </field>
+        <field name="store_ids" formElement="input">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="source" xsi:type="string">etechflow_dd_exception_day</item>
+                </item>
+            </argument>
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Store IDs</label>
+                <dataScope>store_ids</dataScope>
+                <notice translate="true">Comma-separated store IDs. Use "0" for all stores.</notice>
+            </settings>
+        </field>
+        <field name="description" formElement="input">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="source" xsi:type="string">etechflow_dd_exception_day</item>
+                </item>
+            </argument>
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Description</label>
+                <dataScope>description</dataScope>
+                <notice translate="true">Internal label (e.g. "Christmas Day", "Spring bank holiday").</notice>
+            </settings>
+        </field>
+    </fieldset>
+</form>

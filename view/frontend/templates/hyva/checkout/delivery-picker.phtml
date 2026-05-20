@@ -1,0 +1,392 @@
+<?php
+declare(strict_types=1);
+
+/** @var \Magento\Framework\View\Element\Template $block */
+/** @var \Magento\Framework\Escaper $escaper */
+
+/** @var \ETechFlow\DeliveryDate\ViewModel\Hyva\DeliveryPicker|null $viewModel */
+$viewModel = $block->getData('view_model');
+
+if (!$viewModel || !$viewModel->isEnabled()) {
+    return;
+}
+
+$dataJson = $viewModel->getCalendarDataJson();
+?>
+<div
+    id="etechflow-dd-picker"
+    x-data='etechflowDeliveryPicker(<?= /* @noEscape */ $dataJson ?>)'
+    x-init="init()"
+    class="my-6 rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
+    role="region"
+    aria-labelledby="etechflow-dd-title"
+>
+    <div class="flex items-baseline justify-between gap-4">
+        <h3 id="etechflow-dd-title" class="text-base font-semibold text-slate-900">
+            <?= $escaper->escapeHtml(__('Choose your delivery day')) ?>
+        </h3>
+        <button
+            type="button"
+            x-show="state.earliestDate"
+            @click="selectEarliest()"
+            class="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+        >
+            <?= $escaper->escapeHtml(__('Get it as soon as possible')) ?>
+        </button>
+    </div>
+
+    <p
+        x-show="state.fieldNote"
+        x-text="state.fieldNote"
+        class="mt-1 text-sm text-slate-500"
+    ></p>
+
+    <!-- Calendar grid -->
+    <div class="mt-4">
+        <!-- Month nav -->
+        <div class="mb-3 flex items-center justify-between">
+            <button
+                type="button"
+                @click="prevMonth()"
+                :disabled="!canGoBack()"
+                class="rounded p-1 text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500"
+                :aria-label="'<?= $escaper->escapeJs(__('Previous month')) ?>'"
+            >
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            <div class="text-sm font-medium text-slate-900" x-text="formatMonth()"></div>
+            <button
+                type="button"
+                @click="nextMonth()"
+                :disabled="!canGoForward()"
+                class="rounded p-1 text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500"
+                :aria-label="'<?= $escaper->escapeJs(__('Next month')) ?>'"
+            >
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Weekday header -->
+        <div class="grid grid-cols-7 gap-1 text-center text-xs font-medium text-slate-500"
+             role="row" aria-hidden="true">
+            <template x-for="(dayName, idx) in weekdayLabels()" :key="idx">
+                <div x-text="dayName" class="py-1"></div>
+            </template>
+        </div>
+
+        <!-- Day grid -->
+        <div class="mt-1 grid grid-cols-7 gap-1"
+             role="grid"
+             :aria-label="'<?= $escaper->escapeJs(__('Delivery date calendar')) ?>'"
+             @keydown.arrow-left.prevent="moveFocus(-1)"
+             @keydown.arrow-right.prevent="moveFocus(1)"
+             @keydown.arrow-up.prevent="moveFocus(-7)"
+             @keydown.arrow-down.prevent="moveFocus(7)"
+             @keydown.enter.prevent="selectFocused()"
+             @keydown.space.prevent="selectFocused()"
+        >
+            <template x-for="(cell, idx) in monthCells()" :key="idx">
+                <div role="gridcell" :aria-selected="cell.iso === state.selected">
+                    <template x-if="cell.empty">
+                        <div class="h-10"></div>
+                    </template>
+                    <template x-if="!cell.empty">
+                        <button
+                            type="button"
+                            @click="cell.available && select(cell.iso)"
+                            :disabled="!cell.available"
+                            :tabindex="cell.iso === state.focused ? 0 : -1"
+                            :class="cellClass(cell)"
+                            :aria-label="ariaLabel(cell)"
+                        >
+                            <span x-text="cell.day"></span>
+                            <span
+                                x-show="cell.badge"
+                                x-text="cell.badge"
+                                class="absolute -top-1 -right-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800"
+                            ></span>
+                        </button>
+                    </template>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- Selected date readout -->
+    <div
+        x-show="state.selected"
+        x-cloak
+        class="mt-4 rounded-md bg-blue-50 px-3 py-2 text-sm text-blue-900"
+    >
+        <span class="font-semibold"><?= $escaper->escapeHtml(__('Delivery date:')) ?></span>
+        <span x-text="formatSelected()"></span>
+    </div>
+
+    <!-- v0.6 — Time slot dropdown. Renders only when:
+           1. A date is selected (so customers can't pick a slot before a day), AND
+           2. The merchant has configured at least one interval. -->
+    <div
+        x-show="state.selected && state.availableIntervals.length > 0"
+        x-cloak
+        class="mt-4"
+    >
+        <label for="etechflow-dd-slot" class="block text-sm font-medium text-slate-700">
+            <?= $escaper->escapeHtml(__('Delivery time')) ?>
+        </label>
+        <select
+            id="etechflow-dd-slot"
+            x-model="state.timeIntervalId"
+            @change="emitChange()"
+            class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        >
+            <option value=""><?= $escaper->escapeHtml(__('-- Any time --')) ?></option>
+            <template x-for="interval in state.availableIntervals" :key="interval.id">
+                <option :value="interval.id" x-text="interval.label"></option>
+            </template>
+        </select>
+    </div>
+
+    <!-- Comment field -->
+    <div class="mt-4">
+        <label for="etechflow-dd-comment" class="block text-sm font-medium text-slate-700">
+            <?= $escaper->escapeHtml(__('Notes for the driver')) ?>
+            <span class="font-normal text-slate-500">(<?= $escaper->escapeHtml(__('optional')) ?>)</span>
+        </label>
+        <textarea
+            id="etechflow-dd-comment"
+            x-model="state.comment"
+            @input="emitChange()"
+            maxlength="1000"
+            rows="2"
+            class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            :placeholder="'<?= $escaper->escapeJs(__('e.g. Leave at side gate, ring twice')) ?>'"
+        ></textarea>
+        <p class="mt-1 text-right text-xs text-slate-400">
+            <span x-text="state.comment.length"></span>/1000
+        </p>
+    </div>
+
+    <!-- Hidden inputs surface the values onto Hyvä Checkout's form payload.
+         Hyvä Checkout reads serialised form data into its extension_attributes
+         block at the shipping-information POST. The capture plugin
+         (ShippingInformationManagementPlugin) reads them server-side. -->
+    <input type="hidden" name="extension_attributes[etechflow_delivery_date]"               x-model="state.selected"/>
+    <input type="hidden" name="extension_attributes[etechflow_delivery_time_interval_id]"   x-model="state.timeIntervalId"/>
+    <input type="hidden" name="extension_attributes[etechflow_delivery_comment]"            x-model="state.comment"/>
+</div>
+
+<script>
+    // Alpine component — registered globally so Hyvä Checkout's reactive
+    // state can mount/unmount the picker as a single component without
+    // requirejs. No bundler step; no compilation.
+    function etechflowDeliveryPicker(initial) {
+        return {
+            state: {
+                enabled:                 initial.enabled !== false,
+                isRequired:              !!initial.isRequired,
+                fieldNote:               initial.fieldNote || '',
+                dateFormat:              initial.dateFormat || 'yyyy-mm-dd',
+                availableDates:          initial.availableDates || [],
+                earliestDate:            initial.earliestDate || null,
+                latestDate:              initial.latestDate || null,
+                disabledWeekdays:        initial.disabledWeekdays || [],
+                commentStyle:            initial.commentStyle || 'magento_notice',
+                deliveryComment:         initial.deliveryComment || '',
+                availableIntervals:      initial.availableIntervals || [],
+                viewMonth:               null,  // YYYY-MM
+                selected:                initial.defaultDate || '',
+                focused:                 initial.defaultDate || initial.earliestDate || '',
+                timeIntervalId:          '',
+                comment:                 '',
+            },
+
+            init() {
+                if (!this.state.enabled) return;
+                // Anchor the calendar on the earliest available month
+                const anchor = this.state.earliestDate || new Date().toISOString().slice(0, 10);
+                this.state.viewMonth = anchor.slice(0, 7);  // YYYY-MM
+                // Make availableDates O(1) for hot-path lookups
+                this._availableSet = new Set(this.state.availableDates);
+                this.emitChange();
+            },
+
+            weekdayLabels() {
+                // Magento standard: weeks start on Sunday — matches the
+                // disabled-weekdays config (0=Sun .. 6=Sat).
+                return ['<?= $escaper->escapeJs(__('Sun')) ?>',
+                        '<?= $escaper->escapeJs(__('Mon')) ?>',
+                        '<?= $escaper->escapeJs(__('Tue')) ?>',
+                        '<?= $escaper->escapeJs(__('Wed')) ?>',
+                        '<?= $escaper->escapeJs(__('Thu')) ?>',
+                        '<?= $escaper->escapeJs(__('Fri')) ?>',
+                        '<?= $escaper->escapeJs(__('Sat')) ?>'];
+            },
+
+            monthCells() {
+                if (!this.state.viewMonth) return [];
+                const [year, month] = this.state.viewMonth.split('-').map(Number);
+                const firstOfMonth = new Date(Date.UTC(year, month - 1, 1));
+                const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+                const leadingBlanks = firstOfMonth.getUTCDay();  // 0..6
+
+                const cells = [];
+                for (let i = 0; i < leadingBlanks; i++) {
+                    cells.push({ empty: true });
+                }
+                const todayIso = new Date().toISOString().slice(0, 10);
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const iso = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    const available = this._availableSet.has(iso);
+                    let badge = '';
+                    if (available) {
+                        if (iso === this.state.earliestDate) {
+                            badge = '<?= $escaper->escapeJs(__('Earliest')) ?>';
+                        } else if (iso === todayIso) {
+                            badge = '<?= $escaper->escapeJs(__('Today')) ?>';
+                        }
+                    }
+                    cells.push({
+                        empty: false,
+                        iso: iso,
+                        day: d,
+                        available: available,
+                        isToday: iso === todayIso,
+                        badge: badge,
+                    });
+                }
+                return cells;
+            },
+
+            cellClass(cell) {
+                const base = 'relative flex h-10 w-full items-center justify-center rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1';
+                if (!cell.available) {
+                    return base + ' text-slate-300 cursor-not-allowed';
+                }
+                if (cell.iso === this.state.selected) {
+                    return base + ' bg-blue-600 text-white font-semibold hover:bg-blue-700';
+                }
+                if (cell.iso === this.state.focused) {
+                    return base + ' bg-blue-100 text-blue-900 ring-1 ring-blue-300';
+                }
+                return base + ' text-slate-900 hover:bg-slate-100 cursor-pointer';
+            },
+
+            ariaLabel(cell) {
+                // Screen readers announce "December 15, available" or
+                // "December 14, unavailable" instead of just the number.
+                const label = cell.day + (cell.available ? ', <?= $escaper->escapeJs(__('available')) ?>' : ', <?= $escaper->escapeJs(__('unavailable')) ?>');
+                return label + (cell.iso === this.state.selected ? ', <?= $escaper->escapeJs(__('selected')) ?>' : '');
+            },
+
+            select(iso) {
+                this.state.selected = iso;
+                this.state.focused = iso;
+                this.emitChange();
+            },
+
+            selectEarliest() {
+                if (this.state.earliestDate) {
+                    // Auto-navigate to the month containing the earliest day
+                    this.state.viewMonth = this.state.earliestDate.slice(0, 7);
+                    this.select(this.state.earliestDate);
+                }
+            },
+
+            selectFocused() {
+                const cells = this.monthCells();
+                const cell = cells.find(c => !c.empty && c.iso === this.state.focused);
+                if (cell && cell.available) {
+                    this.select(cell.iso);
+                }
+            },
+
+            moveFocus(delta) {
+                if (!this.state.focused) {
+                    this.state.focused = this.state.earliestDate || this.monthCells().find(c => !c.empty)?.iso;
+                    return;
+                }
+                const dt = new Date(this.state.focused + 'T00:00:00Z');
+                dt.setUTCDate(dt.getUTCDate() + delta);
+                const newIso = dt.toISOString().slice(0, 10);
+                this.state.focused = newIso;
+                // Auto-flip the visible month if focus moved outside
+                if (newIso.slice(0, 7) !== this.state.viewMonth) {
+                    this.state.viewMonth = newIso.slice(0, 7);
+                }
+            },
+
+            formatMonth() {
+                if (!this.state.viewMonth) return '';
+                const [y, m] = this.state.viewMonth.split('-').map(Number);
+                const monthNames = [
+                    '<?= $escaper->escapeJs(__('January')) ?>',
+                    '<?= $escaper->escapeJs(__('February')) ?>',
+                    '<?= $escaper->escapeJs(__('March')) ?>',
+                    '<?= $escaper->escapeJs(__('April')) ?>',
+                    '<?= $escaper->escapeJs(__('May')) ?>',
+                    '<?= $escaper->escapeJs(__('June')) ?>',
+                    '<?= $escaper->escapeJs(__('July')) ?>',
+                    '<?= $escaper->escapeJs(__('August')) ?>',
+                    '<?= $escaper->escapeJs(__('September')) ?>',
+                    '<?= $escaper->escapeJs(__('October')) ?>',
+                    '<?= $escaper->escapeJs(__('November')) ?>',
+                    '<?= $escaper->escapeJs(__('December')) ?>',
+                ];
+                return monthNames[m - 1] + ' ' + y;
+            },
+
+            formatSelected() {
+                if (!this.state.selected) return '';
+                const dt = new Date(this.state.selected + 'T00:00:00Z');
+                const fmt = this.state.dateFormat;
+                const d = String(dt.getUTCDate()).padStart(2, '0');
+                const m = String(dt.getUTCMonth() + 1).padStart(2, '0');
+                const y = dt.getUTCFullYear();
+                if (fmt === 'dd-mm-yyyy' || fmt === 'dd-mm-yy') return `${d}-${m}-${y}`;
+                if (fmt === 'mm/dd/yyyy' || fmt === 'mm/dd/yy') return `${m}/${d}/${y}`;
+                if (fmt === 'dd/mm/yyyy' || fmt === 'dd/mm/yy') return `${d}/${m}/${y}`;
+                return `${y}-${m}-${d}`;
+            },
+
+            canGoBack() {
+                if (!this.state.earliestDate || !this.state.viewMonth) return false;
+                return this.state.viewMonth > this.state.earliestDate.slice(0, 7);
+            },
+
+            canGoForward() {
+                if (!this.state.latestDate || !this.state.viewMonth) return false;
+                return this.state.viewMonth < this.state.latestDate.slice(0, 7);
+            },
+
+            prevMonth() {
+                if (!this.canGoBack()) return;
+                const [y, m] = this.state.viewMonth.split('-').map(Number);
+                const prev = new Date(Date.UTC(y, m - 2, 1));
+                this.state.viewMonth = prev.toISOString().slice(0, 7);
+            },
+
+            nextMonth() {
+                if (!this.canGoForward()) return;
+                const [y, m] = this.state.viewMonth.split('-').map(Number);
+                const next = new Date(Date.UTC(y, m, 1));
+                this.state.viewMonth = next.toISOString().slice(0, 7);
+            },
+
+            emitChange() {
+                // Notify Hyvä Checkout's reactive state. The custom event
+                // payload mirrors what the capture plugin will read.
+                window.dispatchEvent(new CustomEvent('etechflow-delivery-date-change', {
+                    detail: {
+                        date: this.state.selected,
+                        timeIntervalId: this.state.timeIntervalId,
+                        comment: this.state.comment,
+                    }
+                }));
+            },
+        };
+    }
+</script>

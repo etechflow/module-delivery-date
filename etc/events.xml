@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+
+    <!-- Copy delivery date / time / comment from quote address to sales_order
+         at order placement. Fires after Order is built from Quote but before
+         the order persist commits, so writes land in the same transaction. -->
+    <event name="sales_model_service_quote_submit_before">
+        <observer name="etechflow_dd_persist_delivery_data"
+                  instance="ETechFlow\DeliveryDate\Observer\PersistDeliveryDataToOrder"/>
+    </event>
+
+    <!-- v0.9 — Quota tracking. Increment on order place; decrement on cancel.
+         Both clamp via the repository so race conditions can't double-count
+         or drive the counter negative. -->
+    <event name="sales_order_place_after">
+        <observer name="etechflow_dd_increment_quota"
+                  instance="ETechFlow\DeliveryDate\Observer\IncrementQuotaOnPlace"/>
+    </event>
+    <event name="order_cancel_after">
+        <observer name="etechflow_dd_decrement_quota"
+                  instance="ETechFlow\DeliveryDate\Observer\DecrementQuotaOnCancel"/>
+    </event>
+
+</config>

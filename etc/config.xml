@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <etechflow_deliverydate>
+            <license>
+                <production_environment>1</production_environment>
+                <license_key/>
+            </license>
+            <general>
+                <enabled>0</enabled>
+                <disable_delivery_on>0,6</disable_delivery_on>
+                <minimal_delivery_interval>1</minimal_delivery_interval>
+                <maximal_delivery_interval>14</maximal_delivery_interval>
+                <exclude_blocked_from_intervals>1</exclude_blocked_from_intervals>
+                <same_day_cutoff_enabled>0</same_day_cutoff_enabled>
+                <same_day_cutoff_time>14:00</same_day_cutoff_time>
+                <next_day_cutoff_enabled>0</next_day_cutoff_enabled>
+                <next_day_cutoff_time>22:00</next_day_cutoff_time>
+                <delivery_comment/>
+                <delivery_comment_style>magento_notice</delivery_comment_style>
+            </general>
+            <delivery_date>
+                <date_format>yyyy-mm-dd</date_format>
+                <is_required>1</is_required>
+                <set_default_value>1</set_default_value>
+                <default_value_offset>1</default_value_offset>
+                <field_note>Choose your delivery day</field_note>
+                <restrict_to_customer_groups>0</restrict_to_customer_groups>
+                <restrict_to_shipping_methods>0</restrict_to_shipping_methods>
+            </delivery_date>
+            <quota>
+                <daily_limit>0</daily_limit>
+            </quota>
+        </etechflow_deliverydate>
+    </default>
+</config>

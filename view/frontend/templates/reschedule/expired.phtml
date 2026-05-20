@@ -1,0 +1,18 @@
+<?php
+declare(strict_types=1);
+
+/** @var \Magento\Framework\View\Element\Template $block */
+/** @var \Magento\Framework\Escaper $escaper */
+?>
+<div class="etechflow-dd-reschedule-expired"
+     style="max-width: 540px; margin: 4rem auto; padding: 2rem; text-align: center; border: 1px solid #e0e0e0; border-radius: 8px; background: #fff;">
+    <h1 style="font-size: 1.4rem; font-weight: 600; color: #1a1a1a; margin: 0 0 1rem 0;">
+        <?= $escaper->escapeHtml(__('Reschedule link no longer valid')) ?>
+    </h1>
+    <p style="color: #424242; margin: 0 0 1rem 0;">
+        <?= $escaper->escapeHtml(__('Your reschedule link has expired or is invalid.')) ?>
+    </p>
+    <p style="color: #757575; margin: 0;">
+        <?= $escaper->escapeHtml(__('If you need to change your delivery, please contact our team directly.')) ?>
+    </p>
+</div>

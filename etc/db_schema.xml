@@ -1,0 +1,155 @@
+<?xml version="1.0"?>
+<!--
+    eTechFlow Delivery Date — v0.1.0 schema.
+
+    Two patterns at play:
+
+    1. EXTENSION COLUMNS on existing core tables (quote_address, sales_order).
+       Magento's declarative-schema engine handles add + rollback cleanly.
+       We add 3 columns to each: the picked date, the picked time-interval
+       ID (FK to our own table), and any delivery notes the customer left.
+
+    2. NEW TABLES for our own data:
+       - etechflow_dd_time_interval     — slot definitions (8-12, 12-16, etc.)
+       - etechflow_dd_exception_day     — single-day holiday or working-day overrides
+       - etechflow_dd_exception_interval — date-range overrides (e.g. "Dec 20 - Jan 5")
+       - etechflow_dd_quota_used        — daily delivery quota counter
+
+    Tables 2 + 3 land in v0.3 (the exceptions admin grids); v0.1 just creates
+    them so the foundation is set. Quota table lands in v0.4. All four are
+    declared here so a single setup:upgrade covers the whole module lifecycle.
+-->
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+
+    <!-- Extension columns on core Magento tables -->
+    <table name="quote_address">
+        <column xsi:type="varchar" name="etechflow_delivery_date" length="10" nullable="true"
+                comment="Customer-picked delivery date (YYYY-MM-DD). Persisted from quote to order."/>
+        <column xsi:type="int" name="etechflow_delivery_time_interval_id" unsigned="true" nullable="true"
+                comment="FK to etechflow_dd_time_interval.interval_id. NULL when time slot not used."/>
+        <column xsi:type="text" name="etechflow_delivery_comment" nullable="true"
+                comment="Free-text delivery notes from the customer. Capped via admin config."/>
+    </table>
+
+    <table name="sales_order">
+        <column xsi:type="varchar" name="etechflow_delivery_date" length="10" nullable="true"
+                comment="Customer-picked delivery date (YYYY-MM-DD). Copied from quote_address at order placement."/>
+        <column xsi:type="int" name="etechflow_delivery_time_interval_id" unsigned="true" nullable="true"
+                comment="FK to etechflow_dd_time_interval.interval_id. NULL when time slot not used."/>
+        <column xsi:type="text" name="etechflow_delivery_comment" nullable="true"
+                comment="Free-text delivery notes from the customer."/>
+        <index referenceId="ETECHFLOW_DD_SALES_ORDER_DELIVERY_DATE" indexType="btree">
+            <column name="etechflow_delivery_date"/>
+        </index>
+    </table>
+
+    <!-- Time slot definitions (managed via Sales -> Delivery Date -> Time Intervals admin grid in v0.3+) -->
+    <table name="etechflow_dd_time_interval" resource="default" engine="innodb"
+           comment="Customer-pickable delivery time slots (08:00-12:00, 12:00-16:00, etc.)">
+        <column xsi:type="int" name="interval_id" unsigned="true" nullable="false" identity="true"
+                comment="Internal slot ID"/>
+        <column xsi:type="smallint" name="store_id" unsigned="true" nullable="false" default="0"
+                comment="Store-view scope (0 = all stores)"/>
+        <column xsi:type="varchar" name="from_time" length="5" nullable="false"
+                comment="Slot start (HH:MM, 24h)"/>
+        <column xsi:type="varchar" name="to_time" length="5" nullable="false"
+                comment="Slot end (HH:MM, 24h)"/>
+        <column xsi:type="int" name="position" unsigned="false" nullable="false" default="0"
+                comment="Sort order in the customer-facing dropdown"/>
+        <column xsi:type="timestamp" name="created_at" default="CURRENT_TIMESTAMP" nullable="false"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" default="CURRENT_TIMESTAMP" nullable="false"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="interval_id"/>
+        </constraint>
+        <index referenceId="ETECHFLOW_DD_TIME_INTERVAL_STORE_POSITION" indexType="btree">
+            <column name="store_id"/>
+            <column name="position"/>
+        </index>
+    </table>
+
+    <!-- Single-day holiday or working-day overrides (managed via Sales -> Delivery Date -> Exceptions grid in v0.3+) -->
+    <table name="etechflow_dd_exception_day" resource="default" engine="innodb"
+           comment="Single-day exceptions to the regular delivery schedule (holidays, one-off working days)">
+        <column xsi:type="int" name="exception_id" unsigned="true" nullable="false" identity="true"
+                comment="Internal exception ID"/>
+        <column xsi:type="varchar" name="store_ids" length="255" nullable="false" default="0"
+                comment="Comma-separated store IDs the exception applies to. 0 = all stores. (Matches Amasty's pattern.)"/>
+        <column xsi:type="varchar" name="day_type" length="16" nullable="false" default="holiday"
+                comment="'holiday' = block delivery / 'working' = force-enable delivery on a day that would normally be blocked"/>
+        <column xsi:type="smallint" name="day" unsigned="true" nullable="false"
+                comment="Day of month, 1-31"/>
+        <column xsi:type="smallint" name="month" unsigned="true" nullable="false"
+                comment="Month, 1-12"/>
+        <column xsi:type="smallint" name="year" unsigned="true" nullable="true"
+                comment="Year (4 digits), or NULL when the exception recurs every year"/>
+        <column xsi:type="varchar" name="description" length="255" nullable="true"
+                comment="Merchant-visible label (e.g. 'Christmas Day', 'Boxing Day open for delivery')"/>
+        <column xsi:type="timestamp" name="created_at" default="CURRENT_TIMESTAMP" nullable="false"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" default="CURRENT_TIMESTAMP" nullable="false"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="exception_id"/>
+        </constraint>
+        <index referenceId="ETECHFLOW_DD_EXCEPTION_DAY_LOOKUP" indexType="btree">
+            <column name="month"/>
+            <column name="day"/>
+            <column name="year"/>
+        </index>
+    </table>
+
+    <!-- Date-range overrides (managed via Sales -> Delivery Date -> Date Intervals grid in v0.3+) -->
+    <table name="etechflow_dd_exception_interval" resource="default" engine="innodb"
+           comment="Date-range exceptions to the regular delivery schedule (vacations, holiday weeks, blocks)">
+        <column xsi:type="int" name="interval_id" unsigned="true" nullable="false" identity="true"
+                comment="Internal interval ID"/>
+        <column xsi:type="varchar" name="store_ids" length="255" nullable="false" default="0"
+                comment="Comma-separated store IDs. 0 = all stores."/>
+        <column xsi:type="boolean" name="each_year" nullable="false" default="false"
+                comment="When TRUE, the year fields are ignored — interval recurs annually"/>
+        <column xsi:type="boolean" name="each_month" nullable="false" default="false"
+                comment="When TRUE, the month fields are ignored — interval recurs monthly"/>
+        <column xsi:type="smallint" name="from_day" unsigned="true" nullable="false"
+                comment="Range start: day of month, 1-31"/>
+        <column xsi:type="smallint" name="from_month" unsigned="true" nullable="false"
+                comment="Range start: month, 1-12"/>
+        <column xsi:type="smallint" name="from_year" unsigned="true" nullable="true"
+                comment="Range start: year. NULL when each_year=true."/>
+        <column xsi:type="smallint" name="to_day" unsigned="true" nullable="false"
+                comment="Range end: day of month, 1-31"/>
+        <column xsi:type="smallint" name="to_month" unsigned="true" nullable="false"
+                comment="Range end: month, 1-12"/>
+        <column xsi:type="smallint" name="to_year" unsigned="true" nullable="true"
+                comment="Range end: year. NULL when each_year=true."/>
+        <column xsi:type="varchar" name="description" length="255" nullable="true"
+                comment="Merchant-visible label (e.g. 'Spring break', 'Warehouse stocktake')"/>
+        <column xsi:type="timestamp" name="created_at" default="CURRENT_TIMESTAMP" nullable="false"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" default="CURRENT_TIMESTAMP" nullable="false"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="interval_id"/>
+        </constraint>
+        <index referenceId="ETECHFLOW_DD_EXCEPTION_INTERVAL_FROM" indexType="btree">
+            <column name="from_month"/>
+            <column name="from_day"/>
+        </index>
+    </table>
+
+    <!-- Daily delivery quota counter (populated by observers when Quota config != Unlimited, v0.4+) -->
+    <table name="etechflow_dd_quota_used" resource="default" engine="innodb"
+           comment="Per-store-per-day delivery quota tracker. Incremented on order place, decremented on order cancel.">
+        <column xsi:type="int" name="id" unsigned="true" nullable="false" identity="true"/>
+        <column xsi:type="smallint" name="store_id" unsigned="true" nullable="false"/>
+        <column xsi:type="date" name="delivery_date" nullable="false"
+                comment="The day customers picked for delivery (YYYY-MM-DD)"/>
+        <column xsi:type="int" name="used_count" unsigned="true" nullable="false" default="0"
+                comment="Number of orders currently scheduled for this delivery date"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" default="CURRENT_TIMESTAMP" nullable="false"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="ETECHFLOW_DD_QUOTA_USED_STORE_DATE">
+            <column name="store_id"/>
+            <column name="delivery_date"/>
+        </constraint>
+    </table>
+
+</schema>

@@ -1,0 +1,85 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+
+    <!-- v0.5 — Time Interval service contract preferences. -->
+    <preference for="ETechFlow\DeliveryDate\Api\Data\TimeIntervalInterface"
+                type="ETechFlow\DeliveryDate\Model\TimeInterval"/>
+    <preference for="ETechFlow\DeliveryDate\Api\TimeIntervalRepositoryInterface"
+                type="ETechFlow\DeliveryDate\Model\TimeIntervalRepository"/>
+
+    <!-- v0.7 — Exception Day service contract preferences. -->
+    <preference for="ETechFlow\DeliveryDate\Api\Data\ExceptionDayInterface"
+                type="ETechFlow\DeliveryDate\Model\ExceptionDay"/>
+    <preference for="ETechFlow\DeliveryDate\Api\ExceptionDayRepositoryInterface"
+                type="ETechFlow\DeliveryDate\Model\ExceptionDayRepository"/>
+
+    <!-- v0.9 — Quota repository preference. -->
+    <preference for="ETechFlow\DeliveryDate\Api\QuotaRepositoryInterface"
+                type="ETechFlow\DeliveryDate\Model\QuotaRepository"/>
+
+    <!-- v0.5 — Bind the listing UI component's data provider to the Collection. -->
+    <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
+        <arguments>
+            <argument name="collections" xsi:type="array">
+                <item name="etechflow_dd_time_interval_listing_data_source" xsi:type="string">ETechFlow\DeliveryDate\Model\ResourceModel\TimeInterval\Grid\Collection</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- v0.5 — Listing Collection adapter for the UI grid -->
+    <virtualType name="ETechFlow\DeliveryDate\Model\ResourceModel\TimeInterval\Grid\Collection"
+                 type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">etechflow_dd_time_interval</argument>
+            <argument name="resourceModel" xsi:type="string">ETechFlow\DeliveryDate\Model\ResourceModel\TimeInterval</argument>
+        </arguments>
+    </virtualType>
+
+    <!-- v0.7 — Bind the exception-day listing UI component's data provider. -->
+    <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
+        <arguments>
+            <argument name="collections" xsi:type="array">
+                <item name="etechflow_dd_exception_day_listing_data_source" xsi:type="string">ETechFlow\DeliveryDate\Model\ResourceModel\ExceptionDay\Grid\Collection</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <virtualType name="ETechFlow\DeliveryDate\Model\ResourceModel\ExceptionDay\Grid\Collection"
+                 type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">etechflow_dd_exception_day</argument>
+            <argument name="resourceModel" xsi:type="string">ETechFlow\DeliveryDate\Model\ResourceModel\ExceptionDay</argument>
+        </arguments>
+    </virtualType>
+
+    <!-- Register CLI commands -->
+    <type name="Magento\Framework\Console\CommandList">
+        <arguments>
+            <argument name="commands" xsi:type="array">
+                <item name="etechflow_ddp_verify" xsi:type="object">ETechFlow\DeliveryDate\Console\Command\VerifyCommand</item>
+                <item name="etechflow_ddp_import_holidays" xsi:type="object">ETechFlow\DeliveryDate\Console\Command\ImportHolidaysCommand</item>
+                <item name="etechflow_ddp_perf" xsi:type="object">ETechFlow\DeliveryDate\Console\Command\PerfCommand</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- v0.2.0 — capture customer-picked date from the standard checkout
+         shipping-information submit. Frontend (Hyvä Checkout component in
+         Phase 2b + Knockout fallback) sends date+time+comment via the
+         extension_attributes mechanism. -->
+    <type name="Magento\Checkout\Api\ShippingInformationManagementInterface">
+        <plugin name="etechflow_dd_capture_delivery_data"
+                type="ETechFlow\DeliveryDate\Plugin\ShippingInformationManagementPlugin"
+                sortOrder="100"/>
+    </type>
+
+    <!-- v0.2.0 — append delivery scheduling block to the order confirmation
+         email's items table. Mirrors BED's OrderEmailItemsPlugin. -->
+    <type name="Magento\Sales\Block\Order\Email\Items">
+        <plugin name="etechflow_dd_email_delivery_block"
+                type="ETechFlow\DeliveryDate\Plugin\OrderEmailItemsPlugin"
+                sortOrder="20"/>
+    </type>
+
+</config>

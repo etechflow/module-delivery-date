@@ -1,0 +1,113 @@
+<?xml version="1.0"?>
+<listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">etechflow_dd_time_interval_listing.etechflow_dd_time_interval_listing_data_source</item>
+        </item>
+    </argument>
+    <settings>
+        <spinner>etechflow_dd_time_interval_columns</spinner>
+        <deps>
+            <dep>etechflow_dd_time_interval_listing.etechflow_dd_time_interval_listing_data_source</dep>
+        </deps>
+        <buttons>
+            <button name="add">
+                <url path="*/*/new"/>
+                <class>primary</class>
+                <label translate="true">Add New Time Interval</label>
+            </button>
+        </buttons>
+    </settings>
+    <dataSource name="etechflow_dd_time_interval_listing_data_source" component="Magento_Ui/js/grid/provider">
+        <settings>
+            <storageConfig>
+                <param name="indexField" xsi:type="string">interval_id</param>
+            </storageConfig>
+            <updateUrl path="mui/index/render"/>
+        </settings>
+        <aclResource>ETechFlow_DeliveryDate::time_interval</aclResource>
+        <dataProvider name="etechflow_dd_time_interval_listing_data_source"
+                      class="Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider">
+            <settings>
+                <requestFieldName>interval_id</requestFieldName>
+                <primaryFieldName>interval_id</primaryFieldName>
+            </settings>
+        </dataProvider>
+    </dataSource>
+    <listingToolbar name="listing_top">
+        <settings>
+            <sticky>true</sticky>
+        </settings>
+        <bookmark name="bookmarks"/>
+        <columnsControls name="columns_controls"/>
+        <filters name="listing_filters"/>
+        <massaction name="listing_massaction">
+            <action name="delete">
+                <settings>
+                    <confirm>
+                        <message translate="true">Delete selected time intervals?</message>
+                        <title translate="true">Delete items</title>
+                    </confirm>
+                    <url path="*/*/massDelete"/>
+                    <type>delete</type>
+                    <label translate="true">Delete</label>
+                </settings>
+            </action>
+        </massaction>
+        <paging name="listing_paging"/>
+    </listingToolbar>
+    <columns name="etechflow_dd_time_interval_columns">
+        <selectionsColumn name="ids">
+            <settings>
+                <indexField>interval_id</indexField>
+            </settings>
+        </selectionsColumn>
+        <column name="interval_id">
+            <settings>
+                <filter>textRange</filter>
+                <label translate="true">ID</label>
+                <sorting>asc</sorting>
+            </settings>
+        </column>
+        <column name="from_time">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">From</label>
+            </settings>
+        </column>
+        <column name="to_time">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">To</label>
+            </settings>
+        </column>
+        <column name="position">
+            <settings>
+                <filter>textRange</filter>
+                <label translate="true">Position</label>
+            </settings>
+        </column>
+        <column name="store_id" class="Magento\Store\Ui\Component\Listing\Column\Store">
+            <settings>
+                <bodyTmpl>ui/grid/cells/html</bodyTmpl>
+                <label translate="true">Store View</label>
+                <sortable>false</sortable>
+            </settings>
+        </column>
+        <column name="updated_at" class="Magento\Ui\Component\Listing\Columns\Date" component="Magento_Ui/js/grid/columns/date">
+            <settings>
+                <filter>dateRange</filter>
+                <dataType>date</dataType>
+                <label translate="true">Last Updated</label>
+            </settings>
+        </column>
+        <actionsColumn name="actions" class="ETechFlow\DeliveryDate\Ui\Component\Listing\Column\TimeIntervalActions">
+            <settings>
+                <indexField>interval_id</indexField>
+                <resizeEnabled>false</resizeEnabled>
+                <resizeDefaultWidth>107</resizeDefaultWidth>
+            </settings>
+        </actionsColumn>
+    </columns>
+</listing>

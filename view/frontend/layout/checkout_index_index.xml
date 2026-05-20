@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <head>
+        <!-- Luma-only CSS. Hyvä Checkout uses a separate route
+             (hyva_checkout_*) so this never loads on Hyvä. -->
+        <css src="ETechFlow_DeliveryDate::css/delivery-picker.css"/>
+    </head>
+</page>

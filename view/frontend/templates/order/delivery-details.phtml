@@ -1,0 +1,44 @@
+<?php
+declare(strict_types=1);
+
+/** @var \Magento\Framework\View\Element\Template $block */
+/** @var \Magento\Framework\Escaper $escaper */
+
+/** @var \ETechFlow\DeliveryDate\ViewModel\Order\DeliveryDetails|null $viewModel */
+$viewModel = $block->getData('view_model');
+
+if (!$viewModel || !$viewModel->hasDeliveryDetails()) {
+    return;
+}
+
+$date    = $viewModel->getDate();
+$slot    = $viewModel->getTimeIntervalLabel();
+$comment = $viewModel->getComment();
+?>
+<div class="box etechflow-dd-order-details">
+    <strong class="box-title">
+        <span><?= $escaper->escapeHtml(__('Delivery details')) ?></span>
+    </strong>
+    <div class="box-content">
+        <?php if ($date !== ''): ?>
+            <p>
+                <strong><?= $escaper->escapeHtml(__('Delivery date:')) ?></strong>
+                <span><?= $escaper->escapeHtml($date) ?></span>
+            </p>
+        <?php endif; ?>
+
+        <?php if ($slot !== ''): ?>
+            <p>
+                <strong><?= $escaper->escapeHtml(__('Delivery slot:')) ?></strong>
+                <span><?= $escaper->escapeHtml($slot) ?></span>
+            </p>
+        <?php endif; ?>
+
+        <?php if ($comment !== ''): ?>
+            <p>
+                <strong><?= $escaper->escapeHtml(__('Notes for the driver:')) ?></strong>
+                <span><?= /* @noEscape */ nl2br($escaper->escapeHtml($comment)) ?></span>
+            </p>
+        <?php endif; ?>
+    </div>
+</div>

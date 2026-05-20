@@ -1,0 +1,96 @@
+<?php
+declare(strict_types=1);
+
+/** @var \Magento\Framework\View\Element\Template $block */
+/** @var \Magento\Framework\Escaper $escaper */
+
+/** @var \ETechFlow\DeliveryDate\ViewModel\Reschedule\Form|null $viewModel */
+$viewModel = $block->getData('view_model');
+
+if (!$viewModel || !$viewModel->getOrder()) {
+    return;
+}
+
+$order = $viewModel->getOrder();
+$reschedulable = $viewModel->isStillReschedulable();
+?>
+<div class="etechflow-dd-reschedule" style="max-width: 540px; margin: 2rem auto; padding: 1.5rem; border: 1px solid #e0e0e0; border-radius: 8px; background: #fff;">
+
+    <h1 style="font-size: 1.4rem; font-weight: 600; color: #1a1a1a; margin: 0 0 0.5rem 0;">
+        <?= $escaper->escapeHtml(__('Reschedule your delivery')) ?>
+    </h1>
+    <p style="color: #757575; margin: 0 0 1rem 0; font-size: 0.95rem;">
+        <?= $escaper->escapeHtml(__('Order #%1', $order->getIncrementId())) ?>
+    </p>
+
+    <?php if (!$reschedulable): ?>
+        <div style="padding: 1rem; background: #fff3e0; color: #e65100; border-radius: 6px;">
+            <?= $escaper->escapeHtml(__('This order has already passed its delivery date and can no longer be rescheduled. If you need help, please contact us.')) ?>
+        </div>
+    <?php else: ?>
+        <p style="color: #424242; margin: 0 0 1rem 0;">
+            <?= $escaper->escapeHtml(__('Currently scheduled for:')) ?>
+            <strong><?= $escaper->escapeHtml($viewModel->getCurrentDate()) ?></strong>
+        </p>
+
+        <form method="post" action="<?= $escaper->escapeUrl($block->getUrl('etechflow_dd/reschedule/save')) ?>"
+              data-mage-init='{"validation":{}}'>
+            <?= /* @noEscape */ $block->getBlockHtml('formkey') ?>
+            <input type="hidden" name="t" value="<?= $escaper->escapeHtmlAttr($viewModel->getToken()) ?>"/>
+
+            <div style="margin-bottom: 1rem;">
+                <label for="etechflow-dd-resched-date"
+                       style="display:block; font-weight:500; color:#424242; margin-bottom:0.25rem;">
+                    <?= $escaper->escapeHtml(__('New delivery date')) ?>
+                </label>
+                <select id="etechflow-dd-resched-date" name="delivery_date" required
+                        style="width:100%; padding:0.5rem 0.75rem; border:1px solid #ccc; border-radius:4px;">
+                    <option value=""><?= $escaper->escapeHtml(__('-- Pick a date --')) ?></option>
+                    <?php foreach ($viewModel->getAvailableDates() as $iso): ?>
+                        <option value="<?= $escaper->escapeHtmlAttr($iso) ?>"
+                                <?= $iso === $viewModel->getCurrentDate() ? 'selected' : '' ?>>
+                            <?= $escaper->escapeHtml($iso) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <?php $intervals = $viewModel->getIntervals(); ?>
+            <?php if (!empty($intervals)): ?>
+                <div style="margin-bottom: 1rem;">
+                    <label for="etechflow-dd-resched-slot"
+                           style="display:block; font-weight:500; color:#424242; margin-bottom:0.25rem;">
+                        <?= $escaper->escapeHtml(__('Delivery time')) ?>
+                    </label>
+                    <select id="etechflow-dd-resched-slot" name="delivery_time_interval_id"
+                            style="width:100%; padding:0.5rem 0.75rem; border:1px solid #ccc; border-radius:4px;">
+                        <option value=""><?= $escaper->escapeHtml(__('-- Any time --')) ?></option>
+                        <?php $currentSlot = $viewModel->getCurrentSlotId(); ?>
+                        <?php foreach ($intervals as $interval): ?>
+                            <?php $label = $interval->getFromTime() . ' – ' . $interval->getToTime(); ?>
+                            <option value="<?= $escaper->escapeHtmlAttr((string) $interval->getIntervalId()) ?>"
+                                    <?= $interval->getIntervalId() === $currentSlot ? 'selected' : '' ?>>
+                                <?= $escaper->escapeHtml($label) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+            <?php endif; ?>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label for="etechflow-dd-resched-comment"
+                       style="display:block; font-weight:500; color:#424242; margin-bottom:0.25rem;">
+                    <?= $escaper->escapeHtml(__('Notes for the driver (optional)')) ?>
+                </label>
+                <textarea id="etechflow-dd-resched-comment" name="delivery_comment" rows="2" maxlength="1000"
+                          style="width:100%; padding:0.5rem 0.75rem; border:1px solid #ccc; border-radius:4px; font-family:inherit;"
+                ><?= $escaper->escapeHtml($viewModel->getCurrentComment()) ?></textarea>
+            </div>
+
+            <button type="submit"
+                    style="padding:0.6rem 1.25rem; background:#1976d2; color:#fff; border:0; border-radius:4px; font-weight:500; cursor:pointer;">
+                <?= $escaper->escapeHtml(__('Reschedule delivery')) ?>
+            </button>
+        </form>
+    <?php endif; ?>
+</div>

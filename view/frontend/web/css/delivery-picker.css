@@ -1,0 +1,223 @@
+/*
+ * Luma styling for the delivery-picker.
+ * Hyvä has its own Tailwind utility classes in the Alpine template; this
+ * file is the Luma-only equivalent. Keep the class names BEM-style so
+ * merchants can override individual cells without depth-fighting
+ * selectors.
+ */
+
+.etechflow-dd-picker {
+    margin: 1.5rem 0;
+    padding: 1rem 1.25rem;
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    font-family: inherit;
+}
+
+.etechflow-dd-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    margin-bottom: 0.25rem;
+}
+
+.etechflow-dd-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0;
+}
+
+.etechflow-dd-quick {
+    background: transparent;
+    border: none;
+    padding: 0;
+    color: #1976d2;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+}
+.etechflow-dd-quick:hover { text-decoration: underline; }
+.etechflow-dd-quick:focus { outline: 2px solid #1976d2; outline-offset: 2px; }
+
+.etechflow-dd-note {
+    font-size: 0.875rem;
+    color: #757575;
+    margin: 0 0 0.75rem 0;
+}
+
+.etechflow-dd-calendar {
+    margin-top: 1rem;
+}
+
+.etechflow-dd-month-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.etechflow-dd-arrow {
+    background: none;
+    border: none;
+    padding: 0.25rem 0.5rem;
+    font-size: 1.25rem;
+    color: #424242;
+    cursor: pointer;
+    border-radius: 4px;
+}
+.etechflow-dd-arrow:hover { background: #f5f5f5; }
+.etechflow-dd-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
+.etechflow-dd-arrow:focus { outline: 2px solid #1976d2; outline-offset: 2px; }
+
+.etechflow-dd-month-label {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #1a1a1a;
+}
+
+.etechflow-dd-weekday-row,
+.etechflow-dd-day-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.25rem;
+}
+
+.etechflow-dd-weekday-label {
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #757575;
+    padding: 0.25rem 0;
+}
+
+.etechflow-dd-cell {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 2.5rem;
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: #1a1a1a;
+    font-size: 0.875rem;
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 0;
+}
+.etechflow-dd-cell:focus { outline: 2px solid #1976d2; outline-offset: 1px; }
+
+.etechflow-dd-cell--empty { background: transparent; cursor: default; }
+.etechflow-dd-cell--available:hover { background: #f5f5f5; }
+.etechflow-dd-cell--blocked {
+    color: #bdbdbd;
+    cursor: not-allowed;
+}
+.etechflow-dd-cell--selected {
+    background: #1976d2;
+    color: #ffffff;
+    font-weight: 600;
+}
+.etechflow-dd-cell--selected:hover { background: #1565c0; }
+.etechflow-dd-cell--focused {
+    background: #e3f2fd;
+    color: #0d47a1;
+    box-shadow: inset 0 0 0 1px #90caf9;
+}
+
+.etechflow-dd-cell-badge {
+    position: absolute;
+    top: -0.25rem;
+    right: -0.25rem;
+    background: #fff3e0;
+    color: #e65100;
+    font-size: 0.625rem;
+    font-weight: 600;
+    padding: 0.125rem 0.375rem;
+    border-radius: 9999px;
+    line-height: 1;
+}
+
+.etechflow-dd-readout {
+    margin-top: 1rem;
+    padding: 0.5rem 0.75rem;
+    background: #e3f2fd;
+    color: #0d47a1;
+    font-size: 0.875rem;
+    border-radius: 4px;
+}
+
+.etechflow-dd-slot-block { margin-top: 1rem; }
+
+.etechflow-dd-slot-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #424242;
+    margin-bottom: 0.25rem;
+}
+
+.etechflow-dd-slot {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-family: inherit;
+    background: #ffffff;
+}
+.etechflow-dd-slot:focus {
+    outline: none;
+    border-color: #1976d2;
+    box-shadow: 0 0 0 1px #1976d2;
+}
+
+.etechflow-dd-comment-block { margin-top: 1rem; }
+
+.etechflow-dd-comment-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #424242;
+    margin-bottom: 0.25rem;
+}
+
+.etechflow-dd-comment-optional {
+    font-weight: 400;
+    color: #757575;
+}
+
+.etechflow-dd-comment {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-family: inherit;
+    resize: vertical;
+}
+.etechflow-dd-comment:focus {
+    outline: none;
+    border-color: #1976d2;
+    box-shadow: 0 0 0 1px #1976d2;
+}
+
+.etechflow-dd-comment-counter {
+    text-align: right;
+    font-size: 0.75rem;
+    color: #9e9e9e;
+    margin: 0.25rem 0 0 0;
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+    .etechflow-dd-cell,
+    .etechflow-dd-arrow,
+    .etechflow-dd-quick {
+        transition: none;
+    }
+}

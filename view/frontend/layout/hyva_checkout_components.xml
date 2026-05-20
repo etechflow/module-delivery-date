@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <!--
+            Hyvä Checkout reads this layout file to discover and mount
+            additional checkout components. The container ID
+            `checkout.shipping.methods.after` is exposed by Hyvä as the
+            slot rendered immediately AFTER the shipping-method radio list.
+
+            Conversion-aware placement (per spec §3.2): the picker shows
+            AFTER the customer picks a carrier, so blackout filtering by
+            shipping method works coherently.
+
+            v1.4.0 (Magewire-native): replaces the previous Alpine-only
+            block with a Magewire component. State now lives on the
+            server; date selection / month nav / slot changes round-trip
+            via wire:click + wire:model. The base class
+            \Magewirephp\Magewire\Component is only autoloaded by Hyvä
+            Checkout — stores without Hyvä Checkout never reach this
+            layout handle, so this change is invisible to them.
+
+            The Alpine-only template at
+            view/frontend/templates/hyva/checkout/delivery-picker.phtml
+            remains wired in checkout_index_index.xml as the fallback
+            for stores that use Hyvä Theme but not Hyvä Checkout.
+        -->
+        <referenceContainer name="checkout.shipping.methods.after">
+            <block name="etechflow.delivery.picker.magewire"
+                   template="ETechFlow_DeliveryDate::magewire/checkout/delivery-date-picker.phtml">
+                <arguments>
+                    <argument name="magewire" xsi:type="object">
+                        ETechFlow\DeliveryDate\Magewire\Checkout\DeliveryDatePicker
+                    </argument>
+                </arguments>
+            </block>
+        </referenceContainer>
+    </body>
+</page>

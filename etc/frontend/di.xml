@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+
+    <!--
+        Wire the Delivery Date ConfigProvider into Magento's checkoutConfig.
+        Exposed under `window.checkoutConfig.etechflowDeliveryDate` and
+        consumed by both the Hyvä Alpine calendar (v0.3+) and the Luma
+        Knockout fallback (v0.4+).
+
+        CRITICAL: This file MUST live at etc/frontend/di.xml. ConfigProvider
+        registration in etc/di.xml (global scope) gets silently overridden
+        by frontend DI — the entry disappears from the merged config and
+        the calendar has no data.
+    -->
+    <type name="Magento\Checkout\Model\CompositeConfigProvider">
+        <arguments>
+            <argument name="configProviders" xsi:type="array">
+                <item name="etechflow_delivery_date_config_provider" xsi:type="object">ETechFlow\DeliveryDate\Model\Checkout\ConfigProvider</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!--
+        Inject the Luma Knockout delivery-picker into the checkout
+        shipping step's `before-shipping-method-form` slot. afterProcess
+        plugin pattern is the Magento-prescribed way to reach into the
+        nested Luma component tree. Hyvä bypasses this entirely.
+    -->
+    <type name="Magento\Checkout\Block\Checkout\LayoutProcessor">
+        <plugin name="etechflow_dd_inject_picker_luma"
+                type="ETechFlow\DeliveryDate\Plugin\Checkout\LayoutProcessorPlugin"
+                sortOrder="100"/>
+    </type>
+
+</config>

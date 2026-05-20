@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:App/etc/routes.xsd">
+    <router id="standard">
+        <!--
+            Storefront URLs for the public no-login reschedule flow:
+                /etechflow_dd/reschedule/index?t=<token>
+                /etechflow_dd/reschedule/save  (POST + form-key)
+
+            Token is validated in the controller; an invalid/expired token
+            renders an "expired link" page rather than throwing.
+        -->
+        <route id="etechflow_dd" frontName="etechflow_dd">
+            <module name="ETechFlow_DeliveryDate"/>
+        </route>
+    </router>
+</config>

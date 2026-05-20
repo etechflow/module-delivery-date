@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Extend the admin orders grid (Sales → Orders) with three columns
+    populated by our v0.1.0 extension_columns on the sales_order table.
+
+    All three are filterable + sortable. The "Delivery Notes" column is
+    hidden by default (visible=false) because it can be long free-text;
+    merchants can flip it on via the column-chooser dropdown.
+
+    Layout merges with Magento_Sales' base sales_order_grid.xml; we add
+    columns to the `sales_order_columns` listing.
+-->
+<listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <columns name="sales_order_columns">
+
+        <column name="etechflow_delivery_date" sortOrder="220">
+            <settings>
+                <filter>dateRange</filter>
+                <dataType>date</dataType>
+                <label translate="true">Delivery Date</label>
+                <visible>true</visible>
+            </settings>
+        </column>
+
+        <column name="etechflow_delivery_time_interval_id" sortOrder="221">
+            <settings>
+                <filter>text</filter>
+                <dataType>text</dataType>
+                <label translate="true">Delivery Slot ID</label>
+                <!-- Hidden by default — most merchants prefer the formatted
+                     slot ("09:00–12:00") shown in order view. ID column is
+                     for power users + custom reports. -->
+                <visible>false</visible>
+            </settings>
+        </column>
+
+        <column name="etechflow_delivery_comment" sortOrder="222">
+            <settings>
+                <filter>text</filter>
+                <dataType>text</dataType>
+                <label translate="true">Delivery Notes</label>
+                <visible>false</visible>
+            </settings>
+        </column>
+
+    </columns>
+</listing>

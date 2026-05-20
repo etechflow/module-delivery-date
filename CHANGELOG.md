@@ -6,6 +6,24 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ---
 
+## [1.4.1] — 2026-05-20 — Magewire dependency hotfix
+
+### Fixed
+
+- **`magewirephp/magewire` moved from `suggest` to `require`.** The `Magewire/Checkout/DeliveryDatePicker.php` class added in v1.4.0 extends `\Magewirephp\Magewire\Component`. On a store without Magewire installed (Hyvä Theme without Hyvä Checkout, or a plain Open Source install), `bin/magento setup:di:compile` would attempt to compile our class against the missing parent and produce broken interceptors — which could surface as random admin breakage. The v1.4.0 CHANGELOG claim that the file would "sit inert on disk" was wrong: di:compile scans every class regardless of whether the layout handle that uses it ever activates.
+  - Composer will now install Magewire transitively. It's a tiny package and is the parent of every Hyvä Checkout component anyway, so it's a no-op cost for Hyvä stores and a one-time install for plain Open Source stores.
+
+### Migration
+
+```
+composer update etechflow/module-delivery-date
+bin/magento setup:upgrade
+bin/magento setup:di:compile
+# Restart php-fpm to clear OPcache (mandatory on production with opcache.validate_timestamps=0)
+```
+
+---
+
 ## [1.4.0] — 2026-05-19 — Magewire-native date picker for Hyvä Checkout
 
 First true Magewire (server-state) date picker in the eTechFlow suite. State now lives on the server and round-trips via wire:click / wire:model.live — distinct from the existing Alpine-only picker which continues to ship for non-Hyvä-Checkout installs.

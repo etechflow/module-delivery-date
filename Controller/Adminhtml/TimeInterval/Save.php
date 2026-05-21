@@ -5,41 +5,48 @@ declare(strict_types=1);
 namespace ETechFlow\DeliveryDate\Controller\Adminhtml\TimeInterval;
 
 use ETechFlow\DeliveryDate\Api\TimeIntervalRepositoryInterface;
+use ETechFlow\DeliveryDate\Controller\Adminhtml\AjaxSaveResultTrait;
 use ETechFlow\DeliveryDate\Model\TimeIntervalFactory;
 use ETechFlow\DeliveryDate\Model\TimeNormalizer;
 use Magento\Backend\App\Action\Context;
-use Magento\Backend\Model\View\Result\Redirect;
 use Magento\Framework\App\Request\DataPersistorInterface;
 use Magento\Framework\App\Request\Http as HttpRequest;
-use Magento\Framework\Controller\ResultFactory;
+use Magento\Framework\Controller\Result\JsonFactory;
 use Magento\Framework\Controller\ResultInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
 
 /**
  * Save handler for the time-interval edit form.
+ *
+ * v1.4.2 fix: returns ResultJson for AJAX UI Component form submits so
+ * the browser actually navigates after save. Previously returned a plain
+ * Redirect which the UI Component AJAX layer transparently followed
+ * server-side — leaving the customer on the same URL with the form
+ * cleared.
  */
 class Save extends AbstractAction
 {
+    use AjaxSaveResultTrait;
+
     public function __construct(
         Context $context,
         private readonly TimeIntervalRepositoryInterface $repository,
         private readonly TimeIntervalFactory $factory,
         private readonly DataPersistorInterface $dataPersistor,
-        private readonly TimeNormalizer $timeNormalizer
+        private readonly TimeNormalizer $timeNormalizer,
+        private readonly JsonFactory $ajaxSaveResultJsonFactory
     ) {
         parent::__construct($context);
     }
 
     public function execute(): ResultInterface
     {
-        /** @var Redirect $redirect */
-        $redirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
         /** @var HttpRequest $request */
         $request = $this->getRequest();
         $data = $request->getPostValue();
 
         if (!$data) {
-            return $redirect->setPath('*/*/');
+            return $this->respondRedirect('*/*/');
         }
 
         $id = isset($data['interval_id']) ? (int) $data['interval_id'] : 0;
@@ -52,7 +59,7 @@ class Save extends AbstractAction
             }
         } catch (NoSuchEntityException $e) {
             $this->messageManager->addErrorMessage(__('This time interval no longer exists.'));
-            return $redirect->setPath('*/*/');
+            return $this->respondRedirect('*/*/', [], true);
         }
 
         // Sanitise + validate before save
@@ -71,33 +78,30 @@ class Save extends AbstractAction
             $model->setPosition($position);
 
             $this->repository->save($model);
-            $this->messageManager->addSuccessMessage(
-                __('The time interval has been saved.')
-            );
+            $this->messageManager->addSuccessMessage(__('The time interval has been saved.'));
             $this->dataPersistor->clear('etechflow_dd_time_interval');
         } catch (\InvalidArgumentException $e) {
             $this->messageManager->addErrorMessage($e->getMessage());
             $this->dataPersistor->set('etechflow_dd_time_interval', $data);
-            return $redirect->setPath('*/*/edit', ['interval_id' => $id]);
+            return $this->respondRedirect('*/*/edit', ['interval_id' => $id], true);
         } catch (\Throwable $e) {
             $this->messageManager->addErrorMessage(
                 __('Could not save the time interval: %1', $e->getMessage())
             );
             $this->dataPersistor->set('etechflow_dd_time_interval', $data);
-            return $redirect->setPath('*/*/edit', ['interval_id' => $id]);
+            return $this->respondRedirect('*/*/edit', ['interval_id' => $id], true);
         }
 
-        if ($this->getRequest()->getParam('back')) {
-            return $redirect->setPath('*/*/edit', ['interval_id' => $model->getIntervalId()]);
-        }
-        return $redirect->setPath('*/*/');
+        // After successful save, land on the edit form so admin sees data
+        return $this->respondRedirect(
+            '*/*/edit',
+            ['interval_id' => $model->getIntervalId(), '_current' => true]
+        );
     }
 
     /**
      * Normalise a posted time string into canonical HH:MM (24h). Accepts
-     * lenient input like "9", "9am", "9:30 PM" — see {@see TimeNormalizer}
-     * for the full grammar. Throws on blank or garbage so the save fails
-     * loudly rather than silently dropping the column.
+     * lenient input like "9", "9am", "9:30 PM".
      *
      * @throws \InvalidArgumentException
      */

@@ -6,36 +6,37 @@ namespace ETechFlow\DeliveryDate\Controller\Adminhtml\ExceptionDay;
 
 use ETechFlow\DeliveryDate\Api\Data\ExceptionDayInterface;
 use ETechFlow\DeliveryDate\Api\ExceptionDayRepositoryInterface;
+use ETechFlow\DeliveryDate\Controller\Adminhtml\AjaxSaveResultTrait;
 use ETechFlow\DeliveryDate\Model\ExceptionDayFactory;
 use Magento\Backend\App\Action\Context;
-use Magento\Backend\Model\View\Result\Redirect;
 use Magento\Framework\App\Request\DataPersistorInterface;
 use Magento\Framework\App\Request\Http as HttpRequest;
-use Magento\Framework\Controller\ResultFactory;
+use Magento\Framework\Controller\Result\JsonFactory;
 use Magento\Framework\Controller\ResultInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
 
 class Save extends AbstractAction
 {
+    use AjaxSaveResultTrait;
+
     public function __construct(
         Context $context,
         private readonly ExceptionDayRepositoryInterface $repository,
         private readonly ExceptionDayFactory $factory,
-        private readonly DataPersistorInterface $dataPersistor
+        private readonly DataPersistorInterface $dataPersistor,
+        private readonly JsonFactory $ajaxSaveResultJsonFactory
     ) {
         parent::__construct($context);
     }
 
     public function execute(): ResultInterface
     {
-        /** @var Redirect $redirect */
-        $redirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
         /** @var HttpRequest $request */
         $request = $this->getRequest();
         $data = $request->getPostValue();
 
         if (!$data) {
-            return $redirect->setPath('*/*/');
+            return $this->respondRedirect('*/*/');
         }
 
         $id = isset($data['exception_id']) ? (int) $data['exception_id'] : 0;
@@ -48,7 +49,7 @@ class Save extends AbstractAction
             }
         } catch (NoSuchEntityException $e) {
             $this->messageManager->addErrorMessage(__('This exception no longer exists.'));
-            return $redirect->setPath('*/*/');
+            return $this->respondRedirect('*/*/', [], true);
         }
 
         try {
@@ -71,7 +72,6 @@ class Save extends AbstractAction
                 : ExceptionDayInterface::TYPE_HOLIDAY;
 
             $storeIds = isset($data['store_ids']) ? (string) $data['store_ids'] : '0';
-            // Allow comma-separated, defaulting to "0" (all stores) if blank
             if (trim($storeIds) === '') {
                 $storeIds = '0';
             }
@@ -89,18 +89,19 @@ class Save extends AbstractAction
         } catch (\InvalidArgumentException $e) {
             $this->messageManager->addErrorMessage($e->getMessage());
             $this->dataPersistor->set('etechflow_dd_exception_day', $data);
-            return $redirect->setPath('*/*/edit', ['exception_id' => $id]);
+            return $this->respondRedirect('*/*/edit', ['exception_id' => $id], true);
         } catch (\Throwable $e) {
             $this->messageManager->addErrorMessage(
                 __('Could not save the exception: %1', $e->getMessage())
             );
             $this->dataPersistor->set('etechflow_dd_exception_day', $data);
-            return $redirect->setPath('*/*/edit', ['exception_id' => $id]);
+            return $this->respondRedirect('*/*/edit', ['exception_id' => $id], true);
         }
 
-        if ($this->getRequest()->getParam('back')) {
-            return $redirect->setPath('*/*/edit', ['exception_id' => $model->getExceptionId()]);
-        }
-        return $redirect->setPath('*/*/');
+        // After successful save, land on the edit form so admin sees data
+        return $this->respondRedirect(
+            '*/*/edit',
+            ['exception_id' => $model->getExceptionId(), '_current' => true]
+        );
     }
 }

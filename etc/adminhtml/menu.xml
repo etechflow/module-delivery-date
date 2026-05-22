@@ -2,13 +2,36 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
     <menu>
-        <!-- Top-level "Delivery Date" submenu under Sales — same pattern
-             Amasty uses, so merchants find it where they expect. -->
+        <!-- Shared eTechFlow top-level — declared identically by every
+             eTechFlow module so Magento merges to one sidebar entry.
+             See reference_etechflow_menu_convention. -->
+        <add id="eTechFlow::root"
+             title="eTechFlow"
+             module="ETechFlow_DeliveryDate"
+             sortOrder="68"
+             resource="Magento_Backend::admin"/>
+
+        <add id="eTechFlow::settings"
+             title="Settings"
+             module="ETechFlow_DeliveryDate"
+             sortOrder="500"
+             parent="eTechFlow::root"
+             resource="Magento_Backend::admin"/>
+
+        <add id="eTechFlow::configuration"
+             title="Configuration"
+             module="ETechFlow_DeliveryDate"
+             sortOrder="10"
+             parent="eTechFlow::settings"
+             action="adminhtml/system_config/edit/section/etechflow_deliverydate"
+             resource="Magento_Config::config"/>
+
+        <!-- Delivery Date column. Previously parented under Magento_Sales::sales. -->
         <add id="ETechFlow_DeliveryDate::management"
              title="Delivery Date"
              module="ETechFlow_DeliveryDate"
-             sortOrder="80"
-             parent="Magento_Sales::sales"
+             sortOrder="20"
+             parent="eTechFlow::root"
              resource="ETechFlow_DeliveryDate::management"/>
 
         <add id="ETechFlow_DeliveryDate::time_interval"

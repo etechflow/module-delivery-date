@@ -6,6 +6,27 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ---
 
+## [1.4.3] — 2026-05-22 — Move admin menu under eTechFlow top-level sidebar
+
+### Changed
+
+- **DD admin pages relocated to a dedicated "eTechFlow" sidebar entry.** Previously the Delivery Date group (with Time Intervals + Exception Days children) lived under `Sales → Sales`. Now it sits as a `Delivery Date` column inside a new top-level `eTechFlow` sidebar entry (clusters with other paid-extension vendors above Magento's Stores). Matches the pattern Amasty / Magefan / MageWorx use.
+- Each eTechFlow module declares the same `eTechFlow::root` + `eTechFlow::settings` + `eTechFlow::configuration` entries — Magento merges by id, so installing N modules still produces exactly one `eTechFlow` sidebar group. No inter-module dependency added.
+
+### Migration
+
+```
+composer update etechflow/module-delivery-date
+bin/magento setup:upgrade
+bin/magento setup:di:compile
+bin/magento setup:static-content:deploy -f
+bin/magento cache:flush
+```
+
+Admin URL routes unchanged (`etechflow_dd/timeInterval/index` and `etechflow_dd/exceptionDay/index` still work). No schema or behaviour changes — pure menu-layout adjustment.
+
+---
+
 ## [1.4.1] — 2026-05-20 — Magewire dependency hotfix
 
 ### Fixed

@@ -80,7 +80,9 @@ class OrderEmailItemsPlugin
             }
 
             $block = $this->buildDeliveryBlock($date, $intervalId, $comment);
-            return ((string) $result) . $block;
+            // Prepend so the Delivery details block appears ABOVE the order items
+            // table (top of the order-items section) rather than at the bottom.
+            return $block . ((string) $result);
         } catch (\Throwable $e) {
             $this->logger->warning(
                 'ETechFlow_DeliveryDate: failed to render order email delivery block; email sent without it.',

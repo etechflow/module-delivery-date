@@ -486,4 +486,3 @@ Initial release. License-gated, Hyvä-aware module foundation with the date-avai
 - **`bin/magento etechflow:ddp:verify`** — 5-step end-to-end smoke test (license eval, config reachable, calculator non-empty, weekly blackouts filter, min interval enforced).
 - **DB schema** (`etc/db_schema.xml`) — three extension columns each on `quote_address` and `sales_order` (plus a btree index on `sales_order.etechflow_delivery_date`), four new reference tables (`etechflow_dd_time_interval`, `_exception_day`, `_exception_interval`, `_quota_used`) for the slot / exception / quota work that lands in v0.3+.
 - **Admin config tree** under `Stores → Configuration → ETechFlow → Delivery Date Picker`. Plain-language tooltips throughout — Amasty's terminology ("Min order processing time in days", "MOPT") swapped for everyday English ("Earliest delivery: how many days from order to first available date").
-

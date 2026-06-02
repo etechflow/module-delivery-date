@@ -18,16 +18,23 @@
     <preference for="ETechFlow\DeliveryDate\Api\QuotaRepositoryInterface"
                 type="ETechFlow\DeliveryDate\Model\QuotaRepository"/>
 
-    <!-- v0.5 — Bind the listing UI component's data provider to the Collection. -->
+    <!--
+        Bind BOTH listing UI components' data providers to their grid
+        Collections in a SINGLE CollectionFactory <type> block.
+        (Previously this was split into two <type> blocks for the same
+        class; the second silently overrode the first's collections array,
+        so the time_interval data source was never registered. Merged here.)
+    -->
     <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
         <arguments>
             <argument name="collections" xsi:type="array">
                 <item name="etechflow_dd_time_interval_listing_data_source" xsi:type="string">ETechFlow\DeliveryDate\Model\ResourceModel\TimeInterval\Grid\Collection</item>
+                <item name="etechflow_dd_exception_day_listing_data_source" xsi:type="string">ETechFlow\DeliveryDate\Model\ResourceModel\ExceptionDay\Grid\Collection</item>
             </argument>
         </arguments>
     </type>
 
-    <!-- v0.5 — Listing Collection adapter for the UI grid -->
+    <!-- v0.5 — Listing Collection adapter for the Time Interval UI grid -->
     <virtualType name="ETechFlow\DeliveryDate\Model\ResourceModel\TimeInterval\Grid\Collection"
                  type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
         <arguments>
@@ -36,15 +43,7 @@
         </arguments>
     </virtualType>
 
-    <!-- v0.7 — Bind the exception-day listing UI component's data provider. -->
-    <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
-        <arguments>
-            <argument name="collections" xsi:type="array">
-                <item name="etechflow_dd_exception_day_listing_data_source" xsi:type="string">ETechFlow\DeliveryDate\Model\ResourceModel\ExceptionDay\Grid\Collection</item>
-            </argument>
-        </arguments>
-    </type>
-
+    <!-- v0.7 — Listing Collection adapter for the Exception Day UI grid -->
     <virtualType name="ETechFlow\DeliveryDate\Model\ResourceModel\ExceptionDay\Grid\Collection"
                  type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
         <arguments>
@@ -65,17 +64,14 @@
     </type>
 
     <!-- v0.2.0 — capture customer-picked date from the standard checkout
-         shipping-information submit. Frontend (Hyvä Checkout component in
-         Phase 2b + Knockout fallback) sends date+time+comment via the
-         extension_attributes mechanism. -->
+         shipping-information submit. -->
     <type name="Magento\Checkout\Api\ShippingInformationManagementInterface">
         <plugin name="etechflow_dd_capture_delivery_data"
                 type="ETechFlow\DeliveryDate\Plugin\ShippingInformationManagementPlugin"
                 sortOrder="100"/>
     </type>
 
-    <!-- v0.2.0 — append delivery scheduling block to the order confirmation
-         email's items table. Mirrors BED's OrderEmailItemsPlugin. -->
+    <!-- v0.2.0 — append delivery scheduling block to the order confirmation email. -->
     <type name="Magento\Sales\Block\Order\Email\Items">
         <plugin name="etechflow_dd_email_delivery_block"
                 type="ETechFlow\DeliveryDate\Plugin\OrderEmailItemsPlugin"

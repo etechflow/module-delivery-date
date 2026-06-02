@@ -122,7 +122,7 @@ class ConfigProvider implements ConfigProviderInterface
         $dates = $this->calculator->getAvailableDates(
             $nowImmutable,
             $this->config,
-            $customerGroupId,
+            (int) $customerGroupId,
             null,
             $exceptions,
             $usedCounts

@@ -26,8 +26,9 @@ define([
     'ko',
     'Magento_Checkout/js/model/quote',
     'Magento_Checkout/js/action/set-shipping-information',
+    'ETechFlow_DeliveryDate/js/model/delivery-selection',
     'mage/translate'
-], function (Component, ko, quote, setShippingInformationAction, $t) {
+], function (Component, ko, quote, setShippingInformationAction, deliverySelection, $t) {
     'use strict';
 
     return Component.extend({
@@ -288,9 +289,16 @@ define([
             // Also write into the shipping-step's standard extensionAttributes
             // bag the first time the user touches the picker — covers the
             // case where the shippingAddress subscription has already fired.
-            this.selected.subscribe(function () { self._stampExtensionAttributes(); });
-            this.comment.subscribe(function () { self._stampExtensionAttributes(); });
-            this.timeIntervalId.subscribe(function () { self._stampExtensionAttributes(); });
+            this.selected.subscribe(function (v) { deliverySelection.date(v); self._stampExtensionAttributes(); });
+            this.comment.subscribe(function (v) { deliverySelection.comment(v); self._stampExtensionAttributes(); });
+            this.timeIntervalId.subscribe(function (v) { deliverySelection.intervalId(v); self._stampExtensionAttributes(); });
+
+            // Seed the shared model with the initial/preselected values so the
+            // set-shipping-information mixin captures them even if the customer
+            // accepts the default day without re-clicking.
+            deliverySelection.date(this.selected());
+            deliverySelection.intervalId(this.timeIntervalId());
+            deliverySelection.comment(this.comment());
         },
 
         _stampExtensionAttributes: function () {

@@ -110,7 +110,7 @@
             <formElements>
                 <select>
                     <settings>
-                        <options class="Magento\Config\Model\Config\Source\Store\WebsiteStore"/>
+                        <options class="Magento\Store\Model\System\Store"/>
                     </settings>
                 </select>
             </formElements>

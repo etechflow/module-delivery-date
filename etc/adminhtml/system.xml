@@ -16,16 +16,8 @@
             <tab>etechflow</tab>
             <resource>ETechFlow_DeliveryDate::config</resource>
 
-            <!-- ============================================================
-                 STATUS BANNER — first thing the merchant sees.
-            ============================================================ -->
-            <group id="module_status"
-                   translate="label"
-                   type="text"
-                   sortOrder="1"
-                   showInDefault="1"
-                   showInWebsite="1"
-                   showInStore="1">
+            <group id="module_status" translate="label" type="text" sortOrder="1"
+                   showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Module Status</label>
                 <frontend_model>ETechFlow\DeliveryDate\Block\Adminhtml\System\Config\Form\ModuleStatus</frontend_model>
             </group>
@@ -33,343 +25,170 @@
             <!-- ============================================================
                  LICENSE
             ============================================================ -->
-            <group id="license"
-                   translate="label"
-                   type="text"
-                   sortOrder="5"
-                   showInDefault="1"
-                   showInWebsite="0"
-                   showInStore="0">
+            <group id="license" translate="label" type="text" sortOrder="5"
+                   showInDefault="1" showInWebsite="0" showInStore="0">
                 <label>License</label>
-                <field id="production_environment"
-                       translate="label comment"
-                       type="select"
-                       sortOrder="5"
-                       showInDefault="1"
-                       showInWebsite="0"
-                       showInStore="0">
+                <field id="license_key" translate="label comment" type="text" sortOrder="10"
+                       showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>License Key</label>
+                    <comment><![CDATA[Paste your eTechFlow SP-XXXX subscription key. Generated automatically after Stripe payment. Bundle key also accepted. Get one at <a href="https://etechflow.com" target="_blank">etechflow.com</a>]]></comment>
+                </field>
+                <field id="issued_key" translate="label comment" type="obscure" sortOrder="20"
+                       showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Issued Key (auto)</label>
+                    <comment><![CDATA[Set automatically on first successful validation. Used to restore the key after an IP-block event. Do not edit.]]></comment>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                </field>
+                <field id="portal_url" translate="label comment" type="text" sortOrder="25"
+                       showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>License Portal URL</label>
+                    <comment><![CDATA[eTechFlow licensing portal endpoint. Update if your portal URL changes.]]></comment>
+                </field>
+                <field id="bundle_license_key" translate="label comment" type="obscure" sortOrder="30"
+                       showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Bundle License Key</label>
+                    <comment><![CDATA[Shared key that activates every eTechFlow module on this host. Set EITHER this OR the per-module key above.]]></comment>
+                    <config_path>etechflow_bundle/license/license_key</config_path>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                </field>
+                <field id="production_environment" translate="label comment" type="select" sortOrder="40"
+                       showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Production Environment</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                    <comment><![CDATA[
-                        <strong>Yes</strong> — this is your live store. Module checks the license key against the current
-                        domain and silently no-ops on the storefront if invalid.<br/>
-                        <strong>No</strong> — this is a dev or staging install. The module runs at full features regardless
-                        of license state. Use this only when the auto-detector misses your non-standard dev host.<br/>
-                        Default: Yes.
-                    ]]></comment>
-                </field>
-                <field id="license_key"
-                       translate="label comment"
-                       type="text"
-                       sortOrder="10"
-                       showInDefault="1"
-                       showInWebsite="0"
-                       showInStore="0">
-                    <label>License Key</label>
-                    <comment><![CDATA[
-                        Paste the key from your purchase email. The key is bound to the domain you provided at checkout.<br/>
-                        Auto-bypassed for development hosts — <code>localhost</code>, <code>*.test</code>, <code>*.local</code>,
-                        <code>staging.*</code>, <code>*.magento.cloud</code>, ngrok tunnels, etc. — so you don't need a key
-                        on dev/staging.<br/>
-                        <code>www.</code> prefix is normalised — one key activates both <code>shop.com</code> and
-                        <code>www.shop.com</code>.<br/>
-                        Bought the 4-module bundle? Paste the bundle key into <em>any</em> of the four eTechFlow modules'
-                        License Key field — it's recognised by all of them.
-                    ]]></comment>
+                    <comment><![CDATA[<strong>Yes</strong> — live store; license enforced. <strong>No</strong> — dev/staging; licensing bypassed. Common dev hosts auto-detect.]]></comment>
                 </field>
             </group>
 
             <!-- ============================================================
-                 GENERAL SETTINGS — module-wide behaviour
+                 PAYMENT (STRIPE)
             ============================================================ -->
-            <group id="general"
-                   translate="label"
-                   type="text"
-                   sortOrder="10"
-                   showInDefault="1"
-                   showInWebsite="1"
-                   showInStore="1">
-                <label>General Settings</label>
+            <group id="payment" translate="label" type="text" sortOrder="6"
+                   showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>Payment Settings (Stripe)</label>
+                <comment><![CDATA[Enter your Stripe API keys so merchants can pay for a license directly from this admin. Keys are encrypted.]]></comment>
+                <field id="stripe_secret_key" translate="label comment" type="obscure" sortOrder="10"
+                       showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Stripe Secret Key</label>
+                    <comment><![CDATA[Your Stripe secret key (sk_test_... or sk_live_...).]]></comment>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                </field>
+                <field id="stripe_publishable_key" translate="label comment" type="text" sortOrder="20"
+                       showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Stripe Publishable Key</label>
+                    <comment><![CDATA[Your Stripe publishable key (pk_test_... or pk_live_...).]]></comment>
+                </field>
+                <field id="stripe_currency" translate="label comment" type="text" sortOrder="30"
+                       showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Currency</label>
+                    <comment><![CDATA[3-letter ISO currency code, e.g. usd, gbp, eur. Default: usd]]></comment>
+                    <validate>validate-length maximum-length-3</validate>
+                </field>
+            </group>
 
-                <field id="enabled"
-                       translate="label comment"
-                       type="select"
-                       sortOrder="10"
-                       showInDefault="1"
-                       showInWebsite="1"
-                       showInStore="1">
+            <!-- ============================================================
+                 GENERAL SETTINGS
+            ============================================================ -->
+            <group id="general" translate="label" type="text" sortOrder="10"
+                   showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>General Settings</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Enable Module</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                    <comment><![CDATA[
-                        Master switch.<br/>
-                        <strong>Yes</strong> — render the date picker at checkout and persist the picked date through to the
-                        order confirmation email + admin order grid.<br/>
-                        <strong>No</strong> — module silently does nothing on the storefront. Toggling this off doesn't lose
-                        any of your config or any existing exception rules.
-                    ]]></comment>
+                    <comment><![CDATA[Master switch. Yes — render the date picker at checkout. No — module silently does nothing.]]></comment>
                 </field>
-
-                <field id="disable_delivery_on"
-                       translate="label comment"
-                       type="multiselect"
-                       sortOrder="20"
-                       showInDefault="1"
-                       showInWebsite="1"
-                       showInStore="1">
+                <field id="disable_delivery_on" translate="label comment" type="multiselect" sortOrder="20"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Disable Delivery On</label>
                     <source_model>ETechFlow\DeliveryDate\Model\Source\Weekday</source_model>
                     <can_be_empty>1</can_be_empty>
-                    <comment><![CDATA[
-                        Weekdays the customer can <strong>NOT</strong> pick. Defaults to Sunday + Saturday (weekend-off
-                        merchants). Hold Ctrl/Cmd to multi-select.<br/>
-                        Specific dates (Christmas, Boxing Day, staff vacations) are managed separately under
-                        <em>Sales → Delivery Date → Exceptions</em> from v0.3+.
-                    ]]></comment>
+                    <comment><![CDATA[Weekdays the customer can NOT pick. Defaults to Sun + Sat.]]></comment>
                 </field>
-
-                <field id="minimal_delivery_interval"
-                       translate="label comment"
-                       type="text"
-                       sortOrder="30"
-                       showInDefault="1"
-                       showInWebsite="1"
-                       showInStore="1">
+                <field id="minimal_delivery_interval" translate="label comment" type="text" sortOrder="30"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Minimum Days to Delivery</label>
                     <validate>validate-not-negative-number validate-digits</validate>
-                    <comment><![CDATA[
-                        How many days between order placement and the earliest customer-pickable delivery day.<br/>
-                        <code>0</code> — same-day delivery is allowed (combine with the same-day cutoff below).<br/>
-                        <code>1</code> — earliest customer can pick is tomorrow.<br/>
-                        <code>2</code> — earliest is day-after-tomorrow.<br/>
-                        Most merchants set this to <code>1</code> or <code>2</code> to give warehouses lead time.
-                    ]]></comment>
+                    <comment><![CDATA[Days between order placement and earliest pickable delivery day. 0 = same-day; 1 = tomorrow.]]></comment>
                 </field>
-
-                <field id="maximal_delivery_interval"
-                       translate="label comment"
-                       type="text"
-                       sortOrder="40"
-                       showInDefault="1"
-                       showInWebsite="1"
-                       showInStore="1">
+                <field id="maximal_delivery_interval" translate="label comment" type="text" sortOrder="40"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Maximum Days Ahead Customer Can Pick</label>
                     <validate>validate-greater-than-zero validate-digits</validate>
-                    <comment><![CDATA[
-                        How many days into the future the calendar shows.<br/>
-                        Default <code>14</code>. Lower numbers (7) force customers to schedule near-term; higher numbers (30+)
-                        suit pre-orders + restocks.
-                    ]]></comment>
+                    <comment><![CDATA[How many days into the future the calendar shows. Default 14.]]></comment>
                 </field>
-
-                <field id="exclude_blocked_from_intervals"
-                       translate="label comment"
-                       type="select"
-                       sortOrder="50"
-                       showInDefault="1"
-                       showInWebsite="1"
-                       showInStore="1">
+                <field id="exclude_blocked_from_intervals" translate="label comment" type="select" sortOrder="50"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Count "Minimum Days" in working days only</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                    <comment><![CDATA[
-                        <strong>Yes</strong> — if Minimum Days is 2 and today is Friday with weekend disabled, the earliest
-                        delivery is <em>Tuesday</em> (2 working days from Fri).<br/>
-                        <strong>No</strong> — same scenario: earliest is <em>Sunday</em>, but Sunday is blocked, so it shifts
-                        to <em>Monday</em> (1 working day from Fri).<br/>
-                        Default: Yes. Most merchants want the "working days" semantic.
-                    ]]></comment>
                 </field>
-
-                <field id="same_day_cutoff_enabled"
-                       translate="label comment"
-                       type="select"
-                       sortOrder="60"
-                       showInDefault="1"
-                       showInWebsite="1"
-                       showInStore="1">
+                <field id="same_day_cutoff_enabled" translate="label comment" type="select" sortOrder="60"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Same-day cutoff time</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                    <comment><![CDATA[
-                        When <strong>Yes</strong>, customers can pick same-day delivery (only if Minimum Days is 0) — but
-                        ONLY until the cutoff time below. After cutoff, today drops off the calendar and the earliest day
-                        becomes tomorrow.<br/>
-                        Standard warehouse pattern: "orders placed before 14:00 ship today; later orders ship tomorrow."
-                    ]]></comment>
                 </field>
-
-                <field id="same_day_cutoff_time"
-                       translate="label comment"
-                       type="text"
-                       sortOrder="70"
-                       showInDefault="1"
-                       showInWebsite="1"
-                       showInStore="1">
+                <field id="same_day_cutoff_time" translate="label comment" type="text" sortOrder="70"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Same-day cutoff (HH:MM, 24h)</label>
-                    <comment><![CDATA[
-                        Format: <code>HH:MM</code> in 24-hour notation (e.g. <code>14:00</code>, <code>17:30</code>).
-                        Server time — set Magento's <em>Stores → Configuration → General → Locale Options → Timezone</em>
-                        first if it isn't already correct.
-                    ]]></comment>
-                    <depends>
-                        <field id="same_day_cutoff_enabled">1</field>
-                    </depends>
+                    <depends><field id="same_day_cutoff_enabled">1</field></depends>
                 </field>
-
-                <field id="next_day_cutoff_enabled"
-                       translate="label comment"
-                       type="select"
-                       sortOrder="80"
-                       showInDefault="1"
-                       showInWebsite="1"
-                       showInStore="1">
+                <field id="next_day_cutoff_enabled" translate="label comment" type="select" sortOrder="80"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Next-day cutoff time</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                    <comment><![CDATA[
-                        Mirrors the same-day option but for <em>tomorrow</em>. Use when your warehouse needs the evening to
-                        pack for the next morning's vans.<br/>
-                        Common pattern: "orders placed after 22:00 won't make tomorrow's dispatch."
-                    ]]></comment>
                 </field>
-
-                <field id="next_day_cutoff_time"
-                       translate="label comment"
-                       type="text"
-                       sortOrder="90"
-                       showInDefault="1"
-                       showInWebsite="1"
-                       showInStore="1">
+                <field id="next_day_cutoff_time" translate="label comment" type="text" sortOrder="90"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Next-day cutoff (HH:MM, 24h)</label>
-                    <comment><![CDATA[
-                        Format: <code>HH:MM</code> in 24-hour notation. Defaults to <code>22:00</code>.
-                    ]]></comment>
-                    <depends>
-                        <field id="next_day_cutoff_enabled">1</field>
-                    </depends>
+                    <depends><field id="next_day_cutoff_enabled">1</field></depends>
                 </field>
-
-                <field id="delivery_comment"
-                       translate="label comment"
-                       type="textarea"
-                       sortOrder="100"
-                       showInDefault="1"
-                       showInWebsite="1"
-                       showInStore="1">
+                <field id="delivery_comment" translate="label comment" type="textarea" sortOrder="100"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Helpful note to show next to the date picker</label>
-                    <comment><![CDATA[
-                        Optional message shown to customers under the calendar at checkout. Useful for "we deliver weekdays
-                        only" / "free Saturday delivery for orders over £50" / "contact us if your desired day isn't shown".
-                        HTML allowed. Leave blank to hide.
-                    ]]></comment>
                 </field>
-
-                <field id="delivery_comment_style"
-                       translate="label comment"
-                       type="select"
-                       sortOrder="110"
-                       showInDefault="1"
-                       showInWebsite="1"
-                       showInStore="1">
+                <field id="delivery_comment_style" translate="label comment" type="select" sortOrder="110"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Note style</label>
                     <source_model>ETechFlow\DeliveryDate\Model\Source\CommentStyle</source_model>
-                    <comment><![CDATA[
-                        <strong>As is</strong> — plain text below the date input.<br/>
-                        <strong>Magento notice</strong> — boxed with the standard Magento info icon.
-                    ]]></comment>
-                    <depends>
-                        <field id="delivery_comment">1</field>
-                    </depends>
+                    <depends><field id="delivery_comment">1</field></depends>
                 </field>
             </group>
 
             <!-- ============================================================
                  DELIVERY DATE — field-level config
             ============================================================ -->
-            <group id="delivery_date"
-                   translate="label"
-                   type="text"
-                   sortOrder="20"
-                   showInDefault="1"
-                   showInWebsite="1"
-                   showInStore="1">
+            <group id="delivery_date" translate="label" type="text" sortOrder="20"
+                   showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Date Field Behaviour</label>
-
-                <field id="is_required"
-                       translate="label comment"
-                       type="select"
-                       sortOrder="10"
-                       showInDefault="1"
-                       showInWebsite="1"
-                       showInStore="1">
+                <field id="is_required" translate="label comment" type="select" sortOrder="10"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Required at checkout</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                    <comment><![CDATA[
-                        <strong>Yes</strong> — customer must pick a date before they can place the order.<br/>
-                        <strong>No</strong> — date is optional. Customers who skip get the default day (set below).
-                    ]]></comment>
                 </field>
-
-                <field id="set_default_value"
-                       translate="label comment"
-                       type="select"
-                       sortOrder="20"
-                       showInDefault="1"
-                       showInWebsite="1"
-                       showInStore="1">
+                <field id="set_default_value" translate="label comment" type="select" sortOrder="20"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Preselect a day for the customer</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                    <comment><![CDATA[
-                        <strong>Yes</strong> — calendar opens with a day already selected, customer can change it.<br/>
-                        <strong>No</strong> — customer has to actively pick a day. Pair with "Required" above for the strictest
-                        flow.
-                    ]]></comment>
                 </field>
-
-                <field id="default_value_offset"
-                       translate="label comment"
-                       type="text"
-                       sortOrder="30"
-                       showInDefault="1"
-                       showInWebsite="1"
-                       showInStore="1">
+                <field id="default_value_offset" translate="label comment" type="text" sortOrder="30"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Preselected day offset</label>
                     <validate>validate-not-negative-number validate-digits</validate>
-                    <comment><![CDATA[
-                        How many days <em>past the first available day</em> the preselected day is.<br/>
-                        <code>0</code> — preselect the first available day (the most common choice — saves a click for the
-                        70%+ of customers who don't care about the day).<br/>
-                        <code>1</code> — day after first available.
-                    ]]></comment>
-                    <depends>
-                        <field id="set_default_value">1</field>
-                    </depends>
+                    <depends><field id="set_default_value">1</field></depends>
                 </field>
-
-                <field id="field_note"
-                       translate="label comment"
-                       type="text"
-                       sortOrder="40"
-                       showInDefault="1"
-                       showInWebsite="1"
-                       showInStore="1">
+                <field id="field_note" translate="label comment" type="text" sortOrder="40"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Field label / instruction</label>
-                    <comment><![CDATA[
-                        Customer-facing text shown above the calendar. Examples: <em>"Choose your delivery day"</em>,
-                        <em>"Pick a delivery date"</em>, <em>"When would you like this delivered?"</em>
-                    ]]></comment>
                 </field>
             </group>
-            <group id="quota" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+
+            <group id="quota" translate="label" type="text" sortOrder="30"
+                   showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Daily Delivery Quota (v0.9)</label>
                 <field id="daily_limit" translate="label comment" type="text" sortOrder="10"
                        showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Maximum deliveries per day</label>
                     <validate>validate-greater-than-zero validate-number</validate>
-                    <comment><![CDATA[
-                        Cap the number of customer-pickable deliveries per day.
-                        <strong>0 = unlimited</strong> (no cap; calendar shows every day the rest of the rules allow).
-                        Set this when your delivery capacity is bounded — e.g. your van fits 40 orders a day.
-                        Once the day is at quota, customers see it as unavailable in the picker.
-                        Cancelled orders free their slot back.
-                    ]]></comment>
+                    <comment><![CDATA[Cap customer-pickable deliveries per day. 0 = unlimited.]]></comment>
                 </field>
             </group>
         </section>

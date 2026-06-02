@@ -9,6 +9,9 @@ use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
+use Magento\Framework\App\CacheInterface;
+use Magento\Framework\App\Config\Storage\WriterInterface;
+use Magento\Framework\HTTP\Client\Curl;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -27,13 +30,27 @@ class LicenseValidatorTest extends TestCase
 {
     private ScopeConfigInterface|MockObject $scopeConfig;
     private StoreManagerInterface|MockObject $storeManager;
+    private CacheInterface|MockObject $cache;
+    private Curl|MockObject $curl;
+    private WriterInterface|MockObject $configWriter;
     private LicenseValidator $validator;
 
     protected function setUp(): void
     {
         $this->scopeConfig = $this->createMock(ScopeConfigInterface::class);
         $this->storeManager = $this->createMock(StoreManagerInterface::class);
-        $this->validator = new LicenseValidator($this->scopeConfig, $this->storeManager);
+        $this->cache = $this->createMock(CacheInterface::class);
+        $this->curl = $this->createMock(Curl::class);
+        $this->configWriter = $this->createMock(WriterInterface::class);
+        // Cache miss by default so portal/HMAC path runs in tests
+        $this->cache->method('load')->willReturn(false);
+        $this->validator = new LicenseValidator(
+            $this->scopeConfig,
+            $this->storeManager,
+            $this->cache,
+            $this->curl,
+            $this->configWriter
+        );
     }
 
     /**

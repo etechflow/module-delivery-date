@@ -25,11 +25,11 @@ class Checkout extends Action
     private const XML_STRIPE_SECRET = 'etechflow_deliverydate/payment/stripe_secret_key';
     private const XML_STRIPE_CURR   = 'etechflow_deliverydate/payment/stripe_currency';
 
-    /** Plan slugs -> [name, amount in cents, display]. */
+    /** Plan slugs -> [name, amount in cents, display]. Billing-period model. */
     private const PLAN_INFO = [
-        'dd_starter'      => ['name' => 'Delivery Date Starter',      'amount' => 1500, 'display' => '$15'],
-        'dd_professional' => ['name' => 'Delivery Date Professional',  'amount' => 3900, 'display' => '$39'],
-        'dd_enterprise'   => ['name' => 'Delivery Date Enterprise',    'amount' => 7900, 'display' => '$79'],
+        'dd_weekly'  => ['name' => 'Delivery Date — Weekly',  'amount' => 900,   'display' => '$9/week'],
+        'dd_monthly' => ['name' => 'Delivery Date — Monthly', 'amount' => 2900,  'display' => '$29/month'],
+        'dd_yearly'  => ['name' => 'Delivery Date — Yearly',  'amount' => 29000, 'display' => '$290/year'],
     ];
 
     public function __construct(

@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ---
 
+## [1.5.1] — 2026-06-03 — Billing-period plans (weekly / monthly / yearly)
+
+### Changed
+
+- **License gate now offers billing periods instead of feature tiers.** Replaced the Starter/Professional/Enterprise cards with **Weekly $9 / Monthly $29 / Yearly $290** (one full-feature price point, USD; yearly ≈ 2 months free). Updated `Controller/Adminhtml/License/Checkout.php` `PLAN_INFO` (`dd_weekly|monthly|yearly`) and the gate template. Matches the eTechFlow portal's new billing-period subscription model.
+
 ## [1.4.3] — 2026-05-22 — Move admin menu under eTechFlow top-level sidebar
 
 ### Changed

@@ -2,7 +2,7 @@
     "name": "etechflow/module-delivery-date",
     "description": "Let customers pick their own delivery day at checkout. Hyvä native, blackout days, time slots (v0.3+), customer rescheduling (v0.4+), and the four admin-UX wins Amasty doesn't ship — live simulator, conflict detection, versioned config, plain-English help.",
     "type": "magento2-module",
-    "version": "1.5.0",
+    "version": "1.5.1",
     "license": "proprietary",
     "authors": [
         {

@@ -51,12 +51,6 @@
                     <config_path>etechflow_bundle/license/license_key</config_path>
                     <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
                 </field>
-                <field id="production_environment" translate="label comment" type="select" sortOrder="40"
-                       showInDefault="1" showInWebsite="0" showInStore="0">
-                    <label>Production Environment</label>
-                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                    <comment><![CDATA[<strong>Yes</strong> — live store; license enforced. <strong>No</strong> — dev/staging; licensing bypassed. Common dev hosts auto-detect.]]></comment>
-                </field>
             </group>
 
             <!-- ============================================================

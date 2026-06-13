@@ -9,32 +9,27 @@ use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Cache\Type\Config as ConfigCacheType;
 use Magento\Framework\App\CacheInterface;
-use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\Config\Storage\WriterInterface;
 use Magento\Framework\Controller\ResultFactory;
 use Magento\Framework\Controller\ResultInterface;
-use Magento\Framework\Encryption\EncryptorInterface;
-use Magento\Framework\HTTP\Client\Curl;
+use Magento\Framework\HTTP\Client\CurlFactory;
 use Magento\Framework\View\Result\PageFactory;
 
 /**
- * Landing page after Stripe payment. Calls the eTechFlow portal to activate
- * the subscription and get the license key, saves it to config, shows success.
+ * Landing page after Stripe payment. Calls the eTechFlow portal to activate the
+ * subscription (the portal verifies the Stripe session with ITS OWN key), gets
+ * the license key, saves it to config, and shows success.
  */
 class Activated extends Action
 {
     public const ADMIN_RESOURCE = 'ETechFlow_DeliveryDate::config';
 
-    private const XML_STRIPE_SECRET = 'etechflow_deliverydate/payment/stripe_secret_key';
-
     public function __construct(
         Context $context,
         private readonly PageFactory $pageFactory,
-        private readonly Curl $curl,
+        private readonly CurlFactory $curlFactory,
         private readonly WriterInterface $configWriter,
         private readonly CacheInterface $cache,
-        private readonly ScopeConfigInterface $scopeConfig,
-        private readonly EncryptorInterface $encryptor,
         private readonly LicenseValidator $licenseValidator
     ) {
         parent::__construct($context);
@@ -43,6 +38,7 @@ class Activated extends Action
     public function execute(): ResultInterface
     {
         $sessionId = trim((string) $this->getRequest()->getParam('session_id', ''));
+        $subId     = trim((string) $this->getRequest()->getParam('sub_id', ''));
         $plan      = trim((string) $this->getRequest()->getParam('plan', ''));
         $domain    = trim((string) $this->getRequest()->getParam('domain', '')) ?: $this->licenseValidator->getCurrentHost();
         $name      = trim((string) $this->getRequest()->getParam('name', ''));
@@ -53,17 +49,14 @@ class Activated extends Action
             return $this->resultFactory->create(ResultFactory::TYPE_REDIRECT)->setPath('etechflow_dd/license/gate');
         }
 
-        $stripeRaw = trim((string) $this->scopeConfig->getValue(self::XML_STRIPE_SECRET));
-        $stripeKey = $stripeRaw !== '' ? trim((string) $this->encryptor->decrypt($stripeRaw)) : '';
-        $portal    = str_replace('/license/validate', '', $this->licenseValidator->getPortalUrl());
-
+        $portal  = rtrim(str_replace('/license/validate', '', $this->licenseValidator->getPortalUrl()), '/');
         $payload = json_encode(array_filter([
-            'session_id'        => $sessionId,
-            'stripe_secret_key' => $stripeKey ?: null,
-            'domain'            => $domain,
-            'name'              => $name,
-            'email'             => $email,
-            'plan'              => $plan,
+            'session_id' => $sessionId,
+            'sub_id'     => $subId ?: null,
+            'domain'     => $domain,
+            'name'       => $name,
+            'email'      => $email,
+            'plan'       => $plan,
         ]));
 
         $licenseKey = '';
@@ -71,20 +64,21 @@ class Activated extends Action
         $error      = '';
 
         try {
-            $this->curl->setTimeout(20);
-            $this->curl->addHeader('Content-Type', 'application/json');
-            $this->curl->addHeader('Accept', 'application/json');
-            $this->curl->addHeader('User-Agent', 'ETechFlow-DD/1.5');
-            $this->curl->post($portal . '/license/activate', $payload);
-            $status = (int) $this->curl->getStatus();
-            $body   = (string) $this->curl->getBody();
+            $curl = $this->curlFactory->create();
+            $curl->setTimeout(25);
+            $curl->addHeader('Content-Type', 'application/json');
+            $curl->addHeader('Accept', 'application/json');
+            $curl->addHeader('ngrok-skip-browser-warning', '1');
+            $curl->post($portal . '/license/activate', $payload);
+            $status = (int) $curl->getStatus();
+            $body   = (string) $curl->getBody();
             $data   = json_decode($body, true);
 
             if ($status === 200 && !empty($data['license_key'])) {
-                $licenseKey = $data['license_key'];
-                $planName   = $data['plan'] ?? $plan;
+                $licenseKey = (string) $data['license_key'];
+                $planName   = (string) ($data['plan'] ?? $plan);
             } else {
-                $error = $data['error'] ?? ('Portal returned status ' . $status . ': ' . $body);
+                $error = is_array($data) && !empty($data['error']) ? $data['error'] : ('Portal returned status ' . $status . ': ' . $body);
             }
         } catch (\Throwable $e) {
             $error = 'Could not reach portal: ' . $e->getMessage();
@@ -104,7 +98,7 @@ class Activated extends Action
                   ->setData('plan', $planName)
                   ->setData('error', $error)
                   ->setData('settings_url', $this->getUrl('adminhtml/system_config/edit/section/etechflow_deliverydate'))
-                  ->setData('management_url', $this->getUrl('etechflow_dd/timeInterval/index'));
+                  ->setData('management_url', $this->getUrl('etechflow_dd/license/gate'));
         }
 
         return $page;

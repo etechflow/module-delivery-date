@@ -56,28 +56,6 @@
             <!-- ============================================================
                  PAYMENT (STRIPE)
             ============================================================ -->
-            <group id="payment" translate="label" type="text" sortOrder="6"
-                   showInDefault="1" showInWebsite="0" showInStore="0">
-                <label>Payment Settings (Stripe)</label>
-                <comment><![CDATA[Enter your Stripe API keys so merchants can pay for a license directly from this admin. Keys are encrypted.]]></comment>
-                <field id="stripe_secret_key" translate="label comment" type="obscure" sortOrder="10"
-                       showInDefault="1" showInWebsite="0" showInStore="0">
-                    <label>Stripe Secret Key</label>
-                    <comment><![CDATA[Your Stripe secret key (sk_test_... or sk_live_...).]]></comment>
-                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
-                </field>
-                <field id="stripe_publishable_key" translate="label comment" type="text" sortOrder="20"
-                       showInDefault="1" showInWebsite="0" showInStore="0">
-                    <label>Stripe Publishable Key</label>
-                    <comment><![CDATA[Your Stripe publishable key (pk_test_... or pk_live_...).]]></comment>
-                </field>
-                <field id="stripe_currency" translate="label comment" type="text" sortOrder="30"
-                       showInDefault="1" showInWebsite="0" showInStore="0">
-                    <label>Currency</label>
-                    <comment><![CDATA[3-letter ISO currency code, e.g. usd, gbp, eur. Default: usd]]></comment>
-                    <validate>validate-length maximum-length-3</validate>
-                </field>
-            </group>
 
             <!-- ============================================================
                  GENERAL SETTINGS

@@ -69,7 +69,18 @@ class Save extends AbstractAction
             if (strcmp($to, $from) <= 0) {
                 throw new \InvalidArgumentException((string) __('"To time" must be after "From time".'));
             }
-            $storeId  = isset($data['store_id'])  ? (int) $data['store_id']  : 0;
+            // The "Store View" field renders as a Magento_Ui ui-select, which
+            // submits its value as an ARRAY (e.g. ["1"]) — not a scalar. A
+            // blind (int) cast of an array yields 1 for ANY non-empty selection
+            // (and 1 even for "All Store Views" = 0), silently scoping every
+            // interval to store view 1. On a store whose front-end view id is
+            // not 1, the slot then never matches and the customer-facing time
+            // dropdown stays hidden. Normalise the array to its first element.
+            $rawStoreId = $data['store_id'] ?? 0;
+            if (is_array($rawStoreId)) {
+                $rawStoreId = $rawStoreId === [] ? 0 : reset($rawStoreId);
+            }
+            $storeId  = (int) $rawStoreId;
             $position = isset($data['position']) ? (int) $data['position'] : 0;
 
             $model->setFromTime($from);

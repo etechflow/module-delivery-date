@@ -16,6 +16,7 @@ use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 /**
  * Tests the per-request caching + exception wrapping behaviour of the
@@ -26,6 +27,7 @@ class TimeIntervalRepositoryTest extends TestCase
     private TimeIntervalFactory|MockObject $factory;
     private TimeIntervalResource|MockObject $resource;
     private CollectionFactory|MockObject $collectionFactory;
+    private LoggerInterface|MockObject $logger;
     private TimeIntervalRepository $repository;
 
     protected function setUp(): void
@@ -33,11 +35,13 @@ class TimeIntervalRepositoryTest extends TestCase
         $this->factory = $this->createMock(TimeIntervalFactory::class);
         $this->resource = $this->createMock(TimeIntervalResource::class);
         $this->collectionFactory = $this->createMock(CollectionFactory::class);
+        $this->logger = $this->createMock(LoggerInterface::class);
 
         $this->repository = new TimeIntervalRepository(
             $this->factory,
             $this->resource,
-            $this->collectionFactory
+            $this->collectionFactory,
+            $this->logger
         );
     }
 
@@ -180,5 +184,57 @@ class TimeIntervalRepositoryTest extends TestCase
 
         $this->repository->getAll();
         $this->repository->getAll();
+    }
+
+    public function testGetAllLogsWhenStoreScopedEmptyButIntervalsExist(): void
+    {
+        // Store-scoped query returns nothing...
+        $scoped = $this->getMockBuilder(Collection::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['addFieldToFilter', 'setOrder', 'getItems'])
+            ->getMock();
+        $scoped->method('addFieldToFilter')->willReturnSelf();
+        $scoped->method('setOrder')->willReturnSelf();
+        $scoped->method('getItems')->willReturn([]);
+
+        // ...but intervals DO exist globally (getSize > 0).
+        $sizer = $this->getMockBuilder(Collection::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getSize'])
+            ->getMock();
+        $sizer->method('getSize')->willReturn(3);
+
+        $this->collectionFactory->method('create')
+            ->willReturnOnConsecutiveCalls($scoped, $sizer);
+
+        // The misconfig must be surfaced in the log, not silently swallowed.
+        $this->logger->expects($this->once())->method('info');
+
+        $this->assertSame([], $this->repository->getAll(2));
+    }
+
+    public function testGetAllDoesNotLogWhenStoreScopedEmptyAndNoIntervalsExist(): void
+    {
+        $scoped = $this->getMockBuilder(Collection::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['addFieldToFilter', 'setOrder', 'getItems'])
+            ->getMock();
+        $scoped->method('addFieldToFilter')->willReturnSelf();
+        $scoped->method('setOrder')->willReturnSelf();
+        $scoped->method('getItems')->willReturn([]);
+
+        $sizer = $this->getMockBuilder(Collection::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getSize'])
+            ->getMock();
+        $sizer->method('getSize')->willReturn(0);
+
+        $this->collectionFactory->method('create')
+            ->willReturnOnConsecutiveCalls($scoped, $sizer);
+
+        // No intervals at all is a clean "not configured" state, not a misconfig.
+        $this->logger->expects($this->never())->method('info');
+
+        $this->assertSame([], $this->repository->getAll(2));
     }
 }

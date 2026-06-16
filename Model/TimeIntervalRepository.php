@@ -11,6 +11,7 @@ use ETechFlow\DeliveryDate\Model\ResourceModel\TimeInterval\CollectionFactory;
 use Magento\Framework\Exception\CouldNotDeleteException;
 use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Exception\NoSuchEntityException;
+use Psr\Log\LoggerInterface;
 
 /**
  * Repository for time intervals. Standard Magento Service Contract:
@@ -34,7 +35,8 @@ class TimeIntervalRepository implements TimeIntervalRepositoryInterface
     public function __construct(
         private readonly TimeIntervalFactory $factory,
         private readonly TimeIntervalResource $resource,
-        private readonly CollectionFactory $collectionFactory
+        private readonly CollectionFactory $collectionFactory,
+        private readonly LoggerInterface $logger
     ) {
     }
 
@@ -110,6 +112,27 @@ class TimeIntervalRepository implements TimeIntervalRepositoryInterface
         $collection->setOrder('position', 'ASC');
         /** @var TimeIntervalInterface[] $list */
         $list = array_values($collection->getItems());
+
+        // Scope-visibility fallback: a store-scoped lookup that returns nothing
+        // while intervals DO exist globally is the classic "customer never sees
+        // the time dropdown" misconfig — the slots were saved against a store
+        // view id that isn't the one the storefront resolves to. We do NOT
+        // override the merchant's intended scoping (that would leak slots across
+        // stores); we just surface the mismatch in the log so it's diagnosable
+        // instead of silently empty.
+        if ($storeId !== null && $list === []) {
+            $total = $this->collectionFactory->create()->getSize();
+            if ($total > 0) {
+                $this->logger->info(sprintf(
+                    'ETechFlow_DeliveryDate: %d time interval(s) exist but none are '
+                    . 'scoped to store_id=%d (or 0). The checkout time-slot dropdown '
+                    . 'will be hidden for this store — check the interval\'s Store View.',
+                    $total,
+                    $storeId
+                ));
+            }
+        }
+
         $this->listCache[$cacheKey] = $list;
         return $list;
     }

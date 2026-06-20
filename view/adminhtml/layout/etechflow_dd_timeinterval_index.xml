@@ -4,6 +4,7 @@
     <update handle="styles"/>
     <body>
         <referenceContainer name="content">
+            <block class="Magento\Backend\Block\Template" name="etechflow_dd_update_notice" template="ETechFlow_DeliveryDate::update-notice.phtml" before="-" cacheable="false"/>
             <uiComponent name="etechflow_dd_time_interval_listing"/>
         </referenceContainer>
     </body>

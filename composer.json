@@ -1,8 +1,8 @@
 {
     "name": "etechflow/module-delivery-date",
-    "description": "Let customers pick their own delivery day at checkout. Hyvä native, blackout days, time slots (v0.3+), customer rescheduling (v0.4+), and the four admin-UX wins Amasty doesn't ship — live simulator, conflict detection, versioned config, plain-English help.",
+    "description": "Let customers pick their own delivery day at checkout. Hyv\u00e4 native, blackout days, time slots (v0.3+), customer rescheduling (v0.4+), and the four admin-UX wins Amasty doesn't ship \u2014 live simulator, conflict detection, versioned config, plain-English help.",
     "type": "magento2-module",
-    "version": "1.6.0",
+    "version": "1.6.1",
     "license": "proprietary",
     "authors": [
         {
@@ -29,8 +29,8 @@
         "magewirephp/magewire": "^1.0||^2.0"
     },
     "suggest": {
-        "hyva-themes/magento2-default-theme": "Hyvä Theme support is first-class — install Hyvä to enable the native Alpine.js calendar (no extra config).",
-        "hyva-themes/magento2-hyva-checkout": "v1.4+: Magewire-native date picker activates on Hyvä Checkout pages — server-state calendar, wire:click date selection, wire:model.live slot dropdown. Falls back to the Alpine picker if not installed.",
+        "hyva-themes/magento2-default-theme": "Hyv\u00e4 Theme support is first-class \u2014 install Hyv\u00e4 to enable the native Alpine.js calendar (no extra config).",
+        "hyva-themes/magento2-hyva-checkout": "v1.4+: Magewire-native date picker activates on Hyv\u00e4 Checkout pages \u2014 server-state calendar, wire:click date selection, wire:model.live slot dropdown. Falls back to the Alpine picker if not installed.",
         "etechflow/module-shipping-table-rates": "Pair with STR to filter delivery days by carrier lead time.",
         "etechflow/module-next-day-eligibility": "Pair with NDE to hide next-day delivery options on ineligible carts automatically.",
         "etechflow/module-backorder-eta-display": "Pair with BED so the calendar's earliest available day respects per-product restock dates."

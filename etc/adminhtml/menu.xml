@@ -2,31 +2,13 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
     <menu>
-        <!-- Shared eTechFlow top-level — declared identically by every
-             eTechFlow module so Magento merges to one sidebar entry.
-             See reference_etechflow_menu_convention. -->
-        <add id="eTechFlow::root"
-             title="eTechFlow"
-             module="ETechFlow_DeliveryDate"
-             sortOrder="68"
-             resource="Magento_Backend::admin"/>
+        <!-- eTechFlow::root is injected at runtime by this module's own
+             Plugin/Adminhtml/EnsureEtechflowMenu (idempotent), so the module is
+             fully independent and never declares the shared id in XML. A second
+             XML declaration of that id would fatal the merged admin menu
+             (uniqueAddItemId), so only own-namespace ids are declared here. -->
 
-        <add id="eTechFlow::settings"
-             title="Settings"
-             module="ETechFlow_DeliveryDate"
-             sortOrder="500"
-             parent="eTechFlow::root"
-             resource="Magento_Backend::admin"/>
-
-        <add id="eTechFlow::configuration"
-             title="Configuration"
-             module="ETechFlow_DeliveryDate"
-             sortOrder="10"
-             parent="eTechFlow::settings"
-             action="adminhtml/system_config/edit/section/etechflow_deliverydate"
-             resource="Magento_Config::config"/>
-
-        <!-- Delivery Date column. Previously parented under Magento_Sales::sales. -->
+        <!-- Delivery Date column. -->
         <add id="ETechFlow_DeliveryDate::management"
              title="Delivery Date"
              module="ETechFlow_DeliveryDate"
@@ -49,5 +31,15 @@
              parent="ETechFlow_DeliveryDate::management"
              action="etechflow_dd/exceptionDay/index"
              resource="ETechFlow_DeliveryDate::exception_day"/>
+
+        <!-- Previously the shared id eTechFlow::configuration; moved into this
+             module's own namespace so this module declares no shared eTechFlow node. -->
+        <add id="ETechFlow_DeliveryDate::configuration"
+             title="Configuration"
+             module="ETechFlow_DeliveryDate"
+             sortOrder="30"
+             parent="ETechFlow_DeliveryDate::management"
+             action="adminhtml/system_config/edit/section/etechflow_deliverydate"
+             resource="Magento_Config::config"/>
     </menu>
 </config>

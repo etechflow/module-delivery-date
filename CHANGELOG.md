@@ -6,6 +6,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ---
 
+## [1.5.2] — 2026-07-03 — Security: portal-only licensing (removes forgeable key path)
+
+Closes a licensing bypass. Previous versions shipped the HMAC signing secret inside `LicenseValidator` (`SECRET_FRAGMENTS` / `BUNDLE_SECRET_FRAGMENTS`) and validated a locally-computed key against it, so anyone with the module source could compute a valid key for their own domain and run the module unlicensed. Secondary bypasses (a `production_environment=No` toggle and the client-settable `issued_key`/`issued_at`/`ip_blocked` grace) let the module activate without the portal.
+
+### Changed (security)
+
+- **Validation is now portal-only.** `isValid()` honours a key only when the ETechFlow portal confirms it; the module ships no signing secret and cannot mint a key.
+- **Removed** `SECRET_FRAGMENTS`, `BUNDLE_SECRET_FRAGMENTS`, `computeKey()`, `computeBundleKey()`, `checkKey()`, and the `isLocallyIssuedKey()` client grace.
+- **`isProductionEnvironment()` is hardcoded to `true`** — the sandbox toggle no longer bypasses licensing.
+- **Offline grace** derives solely from a cached genuine portal success (host+key scoped), which the customer cannot fabricate.
+- Rewrote the unit suite, including a hard test proving a forged `SP-` key plus attacker-set config with no portal is rejected.
+
+---
+
 ## [1.5.1] — 2026-06-03 — Billing-period plans (weekly / monthly / yearly)
 
 ### Changed

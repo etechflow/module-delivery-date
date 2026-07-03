@@ -5,238 +5,274 @@ declare(strict_types=1);
 namespace ETechFlow\DeliveryDate\Test\Unit\Model;
 
 use ETechFlow\DeliveryDate\Model\LicenseValidator;
+use Magento\Framework\App\CacheInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
-use Magento\Store\Model\ScopeInterface;
+use Magento\Framework\HTTP\Client\Curl;
 use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
-use Magento\Framework\App\CacheInterface;
-use Magento\Framework\App\Config\Storage\WriterInterface;
-use Magento\Framework\HTTP\Client\Curl;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Mirrors BED's LicenseValidatorTest. Pins the same shape:
+ * Portal-only licensing tests.
  *
- *   - HMAC over `<canonical-host>:<module-id>` matches `computeKey`
- *   - www. prefix normalised on both sides
- *   - Dev hosts bypass licensing
- *   - Production toggle overrides
- *
- * Module-id and secret fragments differ from BED, but the test surface
- * is identical so the same pattern is regression-safe across modules.
+ * The module ships NO signing secret, so there is nothing to "compute a key"
+ * from any more. Every test drives isValid() through the same surfaces an
+ * attacker or a legitimate customer actually controls: the admin config values
+ * and whether the portal is reachable. The centrepiece is
+ * {@see testForgedKeyAndAttackerControlledConfigCannotBypass} — the guarantee
+ * that nobody can license the module for their own domain without the portal.
  */
 class LicenseValidatorTest extends TestCase
 {
+    private const PORTAL = 'https://portal.etechflow.com/api';
+
+    /** @var ScopeConfigInterface|MockObject */
     private ScopeConfigInterface|MockObject $scopeConfig;
+
+    /** @var StoreManagerInterface|MockObject */
     private StoreManagerInterface|MockObject $storeManager;
+
+    /** @var CacheInterface|MockObject */
     private CacheInterface|MockObject $cache;
+
+    /** @var Curl|MockObject */
     private Curl|MockObject $curl;
-    private WriterInterface|MockObject $configWriter;
+
     private LicenseValidator $validator;
 
     protected function setUp(): void
     {
-        $this->scopeConfig = $this->createMock(ScopeConfigInterface::class);
+        $this->scopeConfig  = $this->createMock(ScopeConfigInterface::class);
         $this->storeManager = $this->createMock(StoreManagerInterface::class);
-        $this->cache = $this->createMock(CacheInterface::class);
-        $this->curl = $this->createMock(Curl::class);
-        $this->configWriter = $this->createMock(WriterInterface::class);
-        // Cache miss by default so portal/HMAC path runs in tests
-        $this->cache->method('load')->willReturn(false);
-        $this->validator = new LicenseValidator(
+        $this->cache        = $this->createMock(CacheInterface::class);
+        $this->curl         = $this->createMock(Curl::class);
+        $this->validator    = new LicenseValidator(
             $this->scopeConfig,
             $this->storeManager,
             $this->cache,
-            $this->curl,
-            $this->configWriter
+            $this->curl
         );
     }
 
-    /**
-     * Stub the store's base URL so getCurrentHost returns $host.
-     * Uses the concrete Store class (not the interface) because the
-     * interface does NOT declare getBaseUrl — it's added by the concrete
-     * model at runtime.
-     */
-    private function stubHost(string $host): void
+    private function setHost(string $host, string $protocol = 'https'): void
     {
         $store = $this->getMockBuilder(Store::class)
             ->disableOriginalConstructor()
             ->onlyMethods(['getBaseUrl'])
             ->getMock();
-        $store->method('getBaseUrl')->willReturn("https://{$host}/");
+        $store->method('getBaseUrl')->willReturn("{$protocol}://{$host}/");
         $this->storeManager->method('getStore')->willReturn($store);
     }
 
     /**
-     * Stub Production Environment + license_key + bundle_key paths.
+     * @param array<string,string> $config path => value; unlisted paths return ''.
      */
-    private function stubConfig(bool $production, string $licenseKey, string $bundleKey = ''): void
+    private function setConfig(array $config): void
     {
-        $this->scopeConfig->method('getValue')->willReturnCallback(
-            static function (string $path, string $scope) use ($production, $licenseKey, $bundleKey) {
-                return match ($path) {
-                    LicenseValidator::XML_PATH_PRODUCTION_ENVIRONMENT => $production ? '1' : '0',
-                    LicenseValidator::XML_PATH_LICENSE_KEY            => $licenseKey,
-                    LicenseValidator::XML_PATH_BUNDLE_LICENSE_KEY     => $bundleKey,
-                    default                                            => null,
-                };
-            }
-        );
+        $this->scopeConfig->method('getValue')
+            ->willReturnCallback(static fn ($path) => $config[$path] ?? '');
     }
 
-    // -----------------------------------------------------------------
-    // computeKey shape + normalisation
-    // -----------------------------------------------------------------
-
-    public function testKeyMatchesBetweenComputeAndValidate(): void
+    /** Portal reachable, returning the given HTTP status + body. */
+    private function setPortalResponse(int $status, string $body): void
     {
-        $this->stubHost('shop.example');
-        $key = $this->validator->computeKey('shop.example');
-        $this->stubConfig(production: true, licenseKey: $key);
+        $this->curl->method('getStatus')->willReturn($status);
+        $this->curl->method('getBody')->willReturn($body);
+    }
+
+    /** Cache miss everywhere (no prior success, no cached verdict). */
+    private function setCacheMiss(): void
+    {
+        $this->cache->method('load')->willReturn(false);
+    }
+
+    // ---------------------------------------------------------------- portal says yes
+
+    public function testPortalIssuedKeyValidatedByPortalIsValid(): void
+    {
+        $this->setHost('shop.example.com');
+        $this->setConfig([
+            LicenseValidator::XML_PATH_LICENSE_KEY => 'SP-live-abc123',
+            LicenseValidator::XML_PATH_PORTAL_API_URL => self::PORTAL,
+        ]);
+        $this->setCacheMiss();
+        $this->setPortalResponse(200, '{"valid":true}');
+
         $this->assertTrue($this->validator->isValid());
     }
 
-    public function testWwwPrefixNormalisedSoOneKeyCoversBoth(): void
+    public function testBundleKeyValidatedByPortalActivatesModule(): void
     {
-        $apexKey = $this->validator->computeKey('shop.example');
-        $wwwKey  = $this->validator->computeKey('www.shop.example');
-        $this->assertSame($apexKey, $wwwKey);
-    }
+        $this->setHost('shop.example.com');
+        $this->setConfig([
+            LicenseValidator::XML_PATH_LICENSE_KEY        => '',
+            LicenseValidator::XML_PATH_BUNDLE_LICENSE_KEY => 'SP-bundle-xyz',
+            LicenseValidator::XML_PATH_PORTAL_API_URL     => self::PORTAL,
+        ]);
+        $this->setCacheMiss();
+        $this->setPortalResponse(200, '{"valid":true}');
 
-    public function testKeyMintedForWwwAlsoActivatesOnApex(): void
-    {
-        $this->stubHost('shop.example');
-        $keyForWww = $this->validator->computeKey('www.shop.example');
-        $this->stubConfig(production: true, licenseKey: $keyForWww);
         $this->assertTrue($this->validator->isValid());
     }
 
-    public function testComputeKeyIsCaseAndWwwInsensitive(): void
+    // ---------------------------------------------------------------- portal says no
+
+    public function testPortalRejectMakesModuleInvalid(): void
     {
-        $variants = ['Shop.Example', 'shop.example', 'WWW.shop.example', 'www.SHOP.example'];
-        $first = $this->validator->computeKey($variants[0]);
-        foreach ($variants as $v) {
-            $this->assertSame($first, $this->validator->computeKey($v));
-        }
+        $this->setHost('shop.example.com');
+        $this->setConfig([
+            LicenseValidator::XML_PATH_LICENSE_KEY => 'SP-revoked',
+            LicenseValidator::XML_PATH_PORTAL_API_URL => self::PORTAL,
+        ]);
+        $this->setCacheMiss();
+        $this->setPortalResponse(200, '{"valid":false}');
+
+        $this->assertFalse($this->validator->isValid());
     }
 
-    // -----------------------------------------------------------------
-    // Dev-host bypass — 20 patterns in one data provider
-    // -----------------------------------------------------------------
+    public function testPortal403IpRevokedMakesModuleInvalid(): void
+    {
+        $this->setHost('shop.example.com');
+        $this->setConfig([
+            LicenseValidator::XML_PATH_LICENSE_KEY => 'SP-ip-removed',
+            LicenseValidator::XML_PATH_PORTAL_API_URL => self::PORTAL,
+        ]);
+        $this->setCacheMiss();
+        $this->setPortalResponse(403, '');
+
+        $this->assertFalse($this->validator->isValid());
+    }
+
+    public function testExplicitRevokeFlagWinsOverEverything(): void
+    {
+        $this->setHost('shop.example.com');
+        $this->setConfig([
+            LicenseValidator::XML_PATH_LICENSE_KEY => 'SP-live-abc123',
+            LicenseValidator::XML_PATH_PORTAL_API_URL => self::PORTAL,
+            'etechflow_deliverydate/license/revoked' => '1',
+        ]);
+        $this->setCacheMiss();
+        // Portal would say yes, but the revoke flag short-circuits before any call.
+        $this->setPortalResponse(200, '{"valid":true}');
+
+        $this->assertFalse($this->validator->isValid());
+    }
+
+    // ---------------------------------------------------------------- THE HARD TEST
 
     /**
-     * @dataProvider devHostProvider
+     * The guarantee the whole rewrite exists for: a third party who owns the
+     * module source can NOT license it for their own domain. They can set any
+     * admin config they like (including a key that starts with "SP-" and every
+     * field the old client-side "grace" used to trust), and they can keep the
+     * portal unreachable. It must still come back invalid, because the only
+     * thing that can say "yes" is the portal, and the only thing that seeds the
+     * offline grace is a genuine portal success — neither of which they have.
      */
-    public function testDevelopmentHostsBypassLicensing(string $host): void
+    public function testForgedKeyAndAttackerControlledConfigCannotBypass(): void
     {
-        $this->stubHost($host);
-        $this->stubConfig(production: true, licenseKey: '');
-        $this->assertTrue($this->validator->isValid(), "Host {$host} should bypass licensing");
-    }
+        $this->setHost('totally-pirated-store.com');
+        $this->setConfig([
+            // A plausibly-formatted key the attacker typed in themselves.
+            LicenseValidator::XML_PATH_LICENSE_KEY => 'SP-i-made-this-up',
+            // Portal deliberately left unconfigured so no server can reject them.
+            LicenseValidator::XML_PATH_PORTAL_API_URL => '',
+            LicenseValidator::XML_PATH_PORTAL_URL     => '',
+            // Every field the removed local-grace path used to trust, all forged.
+            'etechflow_deliverydate/license/issued_key' => 'SP-i-made-this-up',
+            'etechflow_deliverydate/license/issued_at'  => (string) time(),
+            'etechflow_deliverydate/license/ip_blocked' => '1',
+        ]);
+        // No cached genuine success exists for them.
+        $this->setCacheMiss();
 
-    public static function devHostProvider(): array
-    {
-        return [
-            'localhost'              => ['localhost'],
-            'loopback IPv4'          => ['127.0.0.1'],
-            'private 10/8'           => ['10.0.0.5'],
-            'private 192.168/16'     => ['192.168.1.10'],
-            'private 172.16/12'      => ['172.16.0.5'],
-            'private 172.31/12'      => ['172.31.255.254'],
-            '.test TLD'              => ['shop.test'],
-            '.local TLD'             => ['mystore.local'],
-            '.localhost TLD'         => ['app.localhost'],
-            '.dev TLD'               => ['shop.dev'],
-            '.example TLD'           => ['demo.example'],
-            '.invalid TLD'           => ['fake.invalid'],
-            'staging. subdomain'     => ['staging.shop.com'],
-            'stage. subdomain'       => ['stage.shop.com'],
-            'dev. subdomain'         => ['dev.shop.com'],
-            'qa. subdomain'          => ['qa.shop.com'],
-            'uat. subdomain'         => ['uat.shop.com'],
-            'test. subdomain'        => ['test.shop.com'],
-            'preview. subdomain'     => ['preview.shop.com'],
-            'sandbox. subdomain'     => ['sandbox.shop.com'],
-            'hyphen-staging in apex' => ['my-shop-staging.com'],
-            'hyphen-dev in apex'     => ['my-shop-dev.com'],
-            'hyphen-uat in apex'     => ['my-shop-uat.com'],
-            'Adobe Cloud magento.cloud' => ['live-abc123.magento.cloud'],
-            'Adobe Cloud magentocloud'  => ['shop.magentocloud.com'],
-            'ngrok.io tunnel'        => ['abc123.ngrok.io'],
-            'ngrok-free.app tunnel'  => ['abc123.ngrok-free.app'],
-            'loca.lt tunnel'         => ['mystore.loca.lt'],
-        ];
-    }
-
-    // -----------------------------------------------------------------
-    // Production-environment toggle
-    // -----------------------------------------------------------------
-
-    public function testToggleOffBypassesLicensingOnProductionHost(): void
-    {
-        $this->stubHost('real-shop.com');
-        $this->stubConfig(production: false, licenseKey: '');
-        $this->assertTrue($this->validator->isValid());
-    }
-
-    public function testToggleOnRequiresValidKey(): void
-    {
-        $this->stubHost('real-shop.com');
-        $this->stubConfig(production: true, licenseKey: '');
-        $this->assertFalse($this->validator->isValid());
-    }
-
-    public function testToggleNotSetTreatedAsProduction(): void
-    {
-        // null / empty Production Environment defaults to TRUE
-        $this->stubHost('real-shop.com');
-        $this->scopeConfig->method('getValue')->willReturnCallback(
-            static function (string $path, string $scope) {
-                return match ($path) {
-                    LicenseValidator::XML_PATH_PRODUCTION_ENVIRONMENT => null,
-                    LicenseValidator::XML_PATH_LICENSE_KEY            => '',
-                    LicenseValidator::XML_PATH_BUNDLE_LICENSE_KEY     => '',
-                    default                                            => null,
-                };
-            }
+        $this->assertFalse(
+            $this->validator->isValid(),
+            'A forged key with no portal must never license the module.'
         );
+    }
+
+    public function testNonPortalKeyFormatIsRejected(): void
+    {
+        $this->setHost('shop.example.com');
+        $this->setConfig([
+            LicenseValidator::XML_PATH_LICENSE_KEY => 'some-legacy-hmac-looking-key',
+            LicenseValidator::XML_PATH_PORTAL_API_URL => self::PORTAL,
+        ]);
+        $this->setCacheMiss();
+
         $this->assertFalse($this->validator->isValid());
     }
 
-    public function testToggleOffOverridesValidKey(): void
+    public function testNoKeyIsInvalid(): void
     {
-        // Even with a valid key, production=No means "skip licensing, run free"
-        $this->stubHost('real-shop.com');
-        $key = $this->validator->computeKey('real-shop.com');
-        $this->stubConfig(production: false, licenseKey: $key);
-        $this->assertTrue($this->validator->isValid());
-    }
+        $this->setHost('shop.example.com');
+        $this->setConfig([LicenseValidator::XML_PATH_PORTAL_API_URL => self::PORTAL]);
+        $this->setCacheMiss();
 
-    public function testProductionHostsDoNotBypassLicensing(): void
-    {
-        $this->stubHost('real-shop.com');
-        $this->stubConfig(production: true, licenseKey: 'not-the-right-key');
         $this->assertFalse($this->validator->isValid());
     }
 
-    // -----------------------------------------------------------------
-    // Bundle key path
-    // -----------------------------------------------------------------
+    // ---------------------------------------------------------------- offline grace
 
-    public function testBundleKeyActivatesOnRealHost(): void
+    public function testGraceFromPriorSuccessKeepsStorefrontLiveWhilePortalUnreachable(): void
     {
-        $this->stubHost('real-shop.com');
-        $bundle = $this->validator->computeBundleKey('real-shop.com');
-        $this->stubConfig(production: true, licenseKey: '', bundleKey: $bundle);
+        $host = 'shop.example.com';
+        $key  = 'SP-live-abc123';
+        $this->setHost($host);
+        $this->setConfig([
+            LicenseValidator::XML_PATH_LICENSE_KEY => $key,
+            // Portal unreachable (unconfigured) this request.
+            LicenseValidator::XML_PATH_PORTAL_API_URL => '',
+            LicenseValidator::XML_PATH_PORTAL_URL     => '',
+        ]);
+
+        // A genuine portal success was cached recently (only writeGrace can do this).
+        $graceKey = 'etf_dd_lic_grace_' . md5($host . ':' . $key);
+        $this->cache->method('load')->willReturnCallback(
+            static fn ($k) => $k === $graceKey ? (string) time() : false
+        );
+
         $this->assertTrue($this->validator->isValid());
     }
 
-    public function testWrongBundleKeyFails(): void
+    public function testGraceDoesNotApplyToADifferentHost(): void
     {
-        $this->stubHost('real-shop.com');
-        $this->stubConfig(production: true, licenseKey: '', bundleKey: 'wrong-bundle-key');
+        // Grace was seeded for shop.example.com; the pirate is on another host,
+        // so their grace-key lookup misses and they get nothing.
+        $goodGraceKey = 'etf_dd_lic_grace_' . md5('shop.example.com:SP-live-abc123');
+        $this->cache->method('load')->willReturnCallback(
+            static fn ($k) => $k === $goodGraceKey ? (string) time() : false
+        );
+
+        $this->setHost('totally-pirated-store.com');
+        $this->setConfig([
+            LicenseValidator::XML_PATH_LICENSE_KEY => 'SP-live-abc123',
+            LicenseValidator::XML_PATH_PORTAL_API_URL => '',
+            LicenseValidator::XML_PATH_PORTAL_URL     => '',
+        ]);
+
+        $this->assertFalse($this->validator->isValid());
+    }
+
+    public function testPortalRejectIsNotMaskedByStaleGrace(): void
+    {
+        $host = 'shop.example.com';
+        $key  = 'SP-revoked';
+        $this->setHost($host);
+        $this->setConfig([
+            LicenseValidator::XML_PATH_LICENSE_KEY => $key,
+            LicenseValidator::XML_PATH_PORTAL_API_URL => self::PORTAL,
+        ]);
+
+        // Even with a cached prior success, an explicit portal reject wins.
+        $graceKey = 'etf_dd_lic_grace_' . md5($host . ':' . $key);
+        $this->cache->method('load')->willReturnCallback(
+            static fn ($k) => $k === $graceKey ? (string) time() : false
+        );
+        $this->setPortalResponse(403, '');
+
         $this->assertFalse($this->validator->isValid());
     }
 }

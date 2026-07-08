@@ -65,8 +65,16 @@ class DeliveryDatePicker extends \Magewirephp\Magewire\Component
     /** YYYY-MM-DD of the currently selected delivery date, or empty. */
     public string $selectedDate = '';
 
-    /** Magento `etechflow_dd_time_interval.interval_id`, or null for "any time". */
-    public ?int $selectedSlotId = null;
+    /**
+     * Magento `etechflow_dd_time_interval.interval_id`, or null for "any time".
+     *
+     * Untyped on purpose: a wire:model'd <select> syncs its value as a STRING,
+     * and Magewire's SyncInput assigns it raw. A strict `?int` type would throw
+     * a TypeError on assignment (which SyncInput's catch(Exception) does NOT catch,
+     * so it fatals the whole checkout request). We normalise back to int|null in
+     * updatingSelectedSlotId() below.
+     */
+    public $selectedSlotId = null;
 
     /** Free-text comment from the customer (max 1000 chars). */
     public string $comment = '';
@@ -171,6 +179,19 @@ class DeliveryDatePicker extends \Magewirephp\Magewire\Component
      * @param int|null $slotId
      * @return void
      */
+    /**
+     * Magewire pre-assignment hook for wire:model="selectedSlotId".
+     * Coerces the browser's string value to int|null before it is assigned,
+     * so the property always holds a clean interval id (or null for "any time").
+     *
+     * @param mixed $value
+     * @return int|null
+     */
+    public function updatingSelectedSlotId($value)
+    {
+        return ($value === '' || $value === null) ? null : (int) $value;
+    }
+
     public function pickSlot(?int $slotId): void
     {
         if (!$this->enabled) {
@@ -403,7 +424,7 @@ class DeliveryDatePicker extends \Magewirephp\Magewire\Component
         }
 
         $exceptions = $this->exceptionDayRepository->getAll($currentStoreId);
-        $customerGroupId = $this->customerSession->getCustomerGroupId();
+        $customerGroupId = (int) $this->customerSession->getCustomerGroupId();
 
         // Batched quota read (v1.2 perf fix in core DD).
         $usedCounts = [];
